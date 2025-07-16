@@ -1,0 +1,29 @@
+{
+  "test-debian": {
+    "image": "debian:12",
+    "features": {
+      "ghcr.io/devcontainers/features/common-utils:2": {
+        "username": "vscode"
+      },
+      "pyenv": {}
+    },
+    "remoteUser": "vscode"
+  },
+  "test-ubuntu": {
+    "image": "ubuntu:22.04",
+    "features": {
+      "ghcr.io/devcontainers/features/common-utils:2": {
+        "username": "vscode"
+      },
+      "pyenv": {}
+    },
+    "remoteUser": "vscode"
+  },
+  "test": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "pyenv": {}
+    },
+    "remoteUser": "vscode"
+  }
+}
