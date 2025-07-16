@@ -1,0 +1,22 @@
+{
+    "id": "ohmyzsh",
+    "name": "Oh My Zsh with Powerlevel10k",
+    "description": "Installs Oh My Zsh with Powerlevel10k theme, useful plugins, and pre-configured settings for an enhanced terminal experience",
+    "version": "1.0.0",
+    "documentationURL": "https://github.com/infras-factory/devcontainer-features/tree/main/src/ohmyzsh",
+    "keywords": [
+        "oh-my-zsh",
+        "zsh",
+        "shell",
+        "terminal",
+        "powerlevel10k",
+        "productivity"
+    ],
+    "installsAfter": [
+        "ghcr.io/devcontainers/features/common-utils",
+        "ghcr.io/devcontainers/features/git"
+    ],
+    "postAttachCommand": "/bin/bash /usr/local/share/ohmyzsh/scripts/post-attach.sh",
+    "postCreateCommand": "/bin/bash /usr/local/share/ohmyzsh/scripts/post-create.sh",
+    "postStartCommand": "/bin/bash /usr/local/share/ohmyzsh/scripts/post-start.sh"
+}
