@@ -1,0 +1,19 @@
+{
+    "id": "{{ cookiecutter.feature_id }}",
+    "name": "{{ cookiecutter.feature_name }}",
+    "description": "{{ cookiecutter.feature_description }}",
+    "version": "{{ cookiecutter.feature_version }}",
+    "documentationURL": "{{ cookiecutter.documentation_url }}",
+    "keywords": [
+        "{{ cookiecutter.feature_id }}",
+        "devcontainer",
+        "feature"
+    ],
+    "installsAfter": [
+        "ghcr.io/devcontainers/features/common-utils",
+        "ghcr.io/devcontainers/features/git"
+    ],
+    "postAttachCommand": "/bin/bash /usr/local/share/{{ cookiecutter.feature_id }}/scripts/post-attach.sh",
+    "postCreateCommand": "/bin/bash /usr/local/share/{{ cookiecutter.feature_id }}/scripts/post-create.sh",
+    "postStartCommand": "/bin/bash /usr/local/share/{{ cookiecutter.feature_id }}/scripts/post-start.sh"
+}

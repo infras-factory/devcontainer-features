@@ -1,0 +1,7 @@
+{
+    "feature_id": "my-feature",
+    "feature_name": "My Feature",
+    "feature_description": "Description of what this feature does",
+    "feature_version": "1.0.0",
+    "documentation_url": "https://github.com/yourusername/devcontainer-features"
+}
