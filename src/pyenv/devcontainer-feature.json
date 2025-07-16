@@ -1,0 +1,19 @@
+{
+    "id": "pyenv",
+    "name": "Python Version Management (pyenv)",
+    "description": "Installs pyenv for managing multiple Python versions in your development container",
+    "version": "1.0.0",
+    "documentationURL": "https://github.com/infras-factory/devcontainer-features/pyenv",
+    "keywords": [
+        "pyenv",
+        "devcontainer",
+        "feature"
+    ],
+    "installsAfter": [
+        "ghcr.io/devcontainers/features/common-utils",
+        "ghcr.io/devcontainers/features/git"
+    ],
+    "postAttachCommand": "/bin/bash /usr/local/share/pyenv/scripts/post-attach.sh",
+    "postCreateCommand": "/bin/bash /usr/local/share/pyenv/scripts/post-create.sh",
+    "postStartCommand": "/bin/bash /usr/local/share/pyenv/scripts/post-start.sh"
+}
