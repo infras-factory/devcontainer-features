@@ -14,6 +14,16 @@
             "type": "string",
             "default": "",
             "description": "Specify Python version to install (e.g., '3.11.5'). Priority: .python-version file → defaultPythonVersion option → latest LTS version."
+        },
+        "autoCreateVirtualenv": {
+            "type": "boolean",
+            "default": false,
+            "description": "Automatically create and activate a virtual environment using pyenv-virtualenv."
+        },
+        "virtualenvName": {
+            "type": "string",
+            "default": "",
+            "description": "Name for the virtual environment. If empty, auto-generates based on project/Python version (e.g., 'myapp-py311')."
         }
     },
     "installsAfter": [

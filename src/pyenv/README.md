@@ -20,11 +20,24 @@ With custom Python version:
 }
 ```
 
+With auto-created virtual environment:
+```jsonc
+"features": {
+    "ghcr.io/infras-factory/devcontainer-features/pyenv:latest": {
+        "defaultPythonVersion": "3.11.5",
+        "autoCreateVirtualenv": true,
+        "virtualenvName": "my-project-env"
+    }
+}
+```
+
 ## Options
 
 | Options Id | Description | Type | Default Value |
 |------------|-------------|------|---------------|
 | `defaultPythonVersion` | Specify Python version to install (e.g., '3.11.5'). Priority: .python-version file → defaultPythonVersion option → latest LTS version. | string | "" |
+| `autoCreateVirtualenv` | Automatically create and activate a virtual environment using pyenv-virtualenv. | boolean | false |
+| `virtualenvName` | Name for the virtual environment. If empty, auto-generates based on project/Python version (e.g., 'myapp-py311'). | string | "" |
 
 ## What This Feature Does
 
@@ -33,6 +46,8 @@ This feature installs and configures Python Version Management (pyenv) in your d
 ### Key Features
 - Installs all required system dependencies for building Python from source
 - Installs pyenv per-user in the post-create lifecycle script for proper permissions
+- Supports automatic Python version selection with priority logic
+- Optional automatic virtual environment creation and activation
 - Copies lifecycle scripts and configuration files for container events
 - Cleans up package manager caches for smaller image size
 - Provides user guidance and status information on attach
@@ -54,6 +69,7 @@ Executed once after the container is created. Main actions:
 - Determines Python version using priority order: `.python-version` file → `defaultPythonVersion` option → latest LTS version
 - Installs the determined Python version using pyenv and sets it as the global default
 - Installs pyenv plugins (pyenv-virtualenv, pyenv-doctor, pyenv-update)
+- If `autoCreateVirtualenv` is enabled, creates and activates a virtual environment with auto-generated or custom name
 - Updates shell profile files to initialize pyenv automatically for the user
 - Provides detailed status messages and error handling for each step
 

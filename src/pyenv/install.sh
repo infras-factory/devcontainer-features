@@ -31,9 +31,13 @@ log_error() {
 # Feature Options
 # ----------------------------------------
 DEFAULTPYTHONVERSION="${DEFAULTPYTHONVERSION:-}"
+AUTOCREATEVIRTUALENV="${AUTOCREATEVIRTUALENV:-false}"
+VIRTUALENVNAME="${VIRTUALENVNAME:-}"
 
 log_info "Feature options:"
 log_info "  - defaultPythonVersion: ${DEFAULTPYTHONVERSION:-'(empty - priority: .python-version → defaultPythonVersion → latest LTS)'}"
+log_info "  - autoCreateVirtualenv: ${AUTOCREATEVIRTUALENV}"
+log_info "  - virtualenvName: ${VIRTUALENVNAME:-'(empty - will auto-generate)'}"
 
 # ----------------------------------------
 # Install Required Dependencies
@@ -97,6 +101,8 @@ log_info "Storing feature configuration..."
 
 mkdir -p /usr/local/share/pyenv/configs
 echo "DEFAULTPYTHONVERSION=${DEFAULTPYTHONVERSION}" > /usr/local/share/pyenv/configs/feature-options.env
+echo "AUTOCREATEVIRTUALENV=${AUTOCREATEVIRTUALENV}" >> /usr/local/share/pyenv/configs/feature-options.env
+echo "VIRTUALENVNAME=${VIRTUALENVNAME}" >> /usr/local/share/pyenv/configs/feature-options.env
 
 log_success "Feature configuration stored successfully"
 

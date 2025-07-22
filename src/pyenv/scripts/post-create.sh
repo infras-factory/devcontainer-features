@@ -124,9 +124,13 @@ if [ -f "$FEATURE_OPTIONS_FILE" ]; then
     source "$FEATURE_OPTIONS_FILE"
     log_info "Feature options loaded from: $FEATURE_OPTIONS_FILE"
     log_info "  - DEFAULTPYTHONVERSION: ${DEFAULTPYTHONVERSION:-'(not set)'}"
+    log_info "  - AUTOCREATEVIRTUALENV: ${AUTOCREATEVIRTUALENV:-'(not set)'}"
+    log_info "  - VIRTUALENVNAME: ${VIRTUALENVNAME:-'(not set)'}"
 else
     log_warning "Feature options file not found: $FEATURE_OPTIONS_FILE"
     DEFAULTPYTHONVERSION=""
+    AUTOCREATEVIRTUALENV="false"
+    VIRTUALENVNAME=""
 fi
 
 # ----------------------------------------
@@ -193,6 +197,79 @@ log_success "Python $PYTHON_VERSION set as global default"
 # Verify installation
 CURRENT_PYTHON=$(pyenv version-name)
 log_info "Current Python version: $CURRENT_PYTHON"
+
+# ----------------------------------------
+# Auto-create Virtual Environment (if enabled)
+# ----------------------------------------
+if [ "$AUTOCREATEVIRTUALENV" = "true" ]; then
+    log_info "Auto-creating virtual environment..."
+
+    # Determine virtualenv name
+    VENV_NAME=""
+    if [ -n "$VIRTUALENVNAME" ]; then
+        # Use provided name
+        VENV_NAME="$VIRTUALENVNAME"
+        log_info "Using provided virtualenv name: $VENV_NAME"
+    else
+        # Auto-generate name based on project and Python version
+        PROJECT_NAME=""
+
+        # Try to get project name from workspace directory
+        for dir in "$WORKSPACE_DIR"/*; do
+            if [ -d "$dir" ]; then
+                PROJECT_NAME=$(basename "$dir")
+                break
+            fi
+        done
+
+        # Generate Python version string (e.g., py311 from 3.11.5)
+        PYTHON_VERSION_SHORT="py${PYTHON_VERSION%%.*}${PYTHON_VERSION#*.}"
+        PYTHON_VERSION_SHORT="${PYTHON_VERSION_SHORT%.*}"
+
+        if [ -n "$PROJECT_NAME" ]; then
+            VENV_NAME="${PROJECT_NAME}-${PYTHON_VERSION_SHORT}"
+            log_info "Auto-generated virtualenv name from project: $VENV_NAME"
+        else
+            VENV_NAME="venv-${PYTHON_VERSION_SHORT}"
+            log_info "Auto-generated virtualenv name (fallback): $VENV_NAME"
+        fi
+    fi
+
+    # Create virtualenv if it doesn't exist
+    if ! pyenv versions | grep -q "$VENV_NAME"; then
+        log_info "Creating virtual environment: $VENV_NAME with Python $PYTHON_VERSION"
+        pyenv virtualenv "$PYTHON_VERSION" "$VENV_NAME" || {
+            log_error "Failed to create virtual environment: $VENV_NAME"
+            exit 1
+        }
+        log_success "Virtual environment $VENV_NAME created successfully"
+    else
+        log_info "Virtual environment $VENV_NAME already exists"
+    fi
+
+    # Set virtualenv as local default for workspace
+    if [ -d "$WORKSPACE_DIR" ]; then
+        for dir in "$WORKSPACE_DIR"/*; do
+            if [ -d "$dir" ]; then
+                log_info "Setting $VENV_NAME as local Python version for: $dir"
+                cd "$dir" && pyenv local "$VENV_NAME"
+                log_success "Virtual environment $VENV_NAME activated for project"
+                break
+            fi
+        done
+    else
+        # Set as global if no workspace found
+        log_info "Setting $VENV_NAME as global Python version"
+        pyenv global "$VENV_NAME"
+    fi
+
+    # Update current Python version info
+    CURRENT_PYTHON=$(pyenv version-name)
+    log_success "Virtual environment setup completed"
+    log_info "Active environment: $CURRENT_PYTHON"
+else
+    log_info "Auto-create virtual environment is disabled"
+fi
 
 echo ""
 log_success "Post-create script completed!"
