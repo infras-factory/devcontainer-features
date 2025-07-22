@@ -33,11 +33,13 @@ log_error() {
 DEFAULTPYTHONVERSION="${DEFAULTPYTHONVERSION:-}"
 AUTOCREATEVIRTUALENV="${AUTOCREATEVIRTUALENV:-false}"
 VIRTUALENVNAME="${VIRTUALENVNAME:-}"
+GLOBALPACKAGES="${GLOBALPACKAGES:-}"
 
 log_info "Feature options:"
 log_info "  - defaultPythonVersion: ${DEFAULTPYTHONVERSION:-'(empty - priority: .python-version → defaultPythonVersion → latest LTS)'}"
 log_info "  - autoCreateVirtualenv: ${AUTOCREATEVIRTUALENV}"
 log_info "  - virtualenvName: ${VIRTUALENVNAME:-'(empty - will auto-generate)'}"
+log_info "  - globalPackages: ${GLOBALPACKAGES:-'(empty)'}"
 
 # ----------------------------------------
 # Install Required Dependencies
@@ -100,9 +102,12 @@ log_info "This ensures proper permissions and user-specific configuration"
 log_info "Storing feature configuration..."
 
 mkdir -p /usr/local/share/pyenv/configs
-echo "DEFAULTPYTHONVERSION=${DEFAULTPYTHONVERSION}" > /usr/local/share/pyenv/configs/feature-options.env
-echo "AUTOCREATEVIRTUALENV=${AUTOCREATEVIRTUALENV}" >> /usr/local/share/pyenv/configs/feature-options.env
-echo "VIRTUALENVNAME=${VIRTUALENVNAME}" >> /usr/local/share/pyenv/configs/feature-options.env
+{
+    echo "DEFAULTPYTHONVERSION=${DEFAULTPYTHONVERSION}"
+    echo "AUTOCREATEVIRTUALENV=${AUTOCREATEVIRTUALENV}"
+    echo "VIRTUALENVNAME=${VIRTUALENVNAME}"
+    echo "GLOBALPACKAGES=${GLOBALPACKAGES}"
+} > /usr/local/share/pyenv/configs/feature-options.env
 
 log_success "Feature configuration stored successfully"
 

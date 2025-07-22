@@ -24,6 +24,11 @@
             "type": "string",
             "default": "",
             "description": "Name for the virtual environment. If empty, auto-generates based on project/Python version (e.g., 'myapp-py311')."
+        },
+        "globalPackages": {
+            "type": "string",
+            "default": "",
+            "description": "Comma-separated list of packages to install globally (e.g., 'pip-tools,black,flake8')."
         }
     },
     "installsAfter": [

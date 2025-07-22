@@ -197,6 +197,38 @@ if command -v pyenv &> /dev/null; then
     else
         log_info "pyenv-doctor not available - skipping diagnostics"
     fi
+
+    # ----------------------------------------
+    # Verify Global Packages
+    # ----------------------------------------
+    echo ""
+    log_info "Checking global packages..."
+
+    # Load feature options to check if globalPackages was specified
+    FEATURE_OPTIONS_FILE="/usr/local/share/pyenv/configs/feature-options.env"
+    if [ -f "$FEATURE_OPTIONS_FILE" ]; then
+        # shellcheck disable=SC1090,SC1091
+        source "$FEATURE_OPTIONS_FILE"
+
+        if [ -n "$GLOBALPACKAGES" ]; then
+            log_info "Expected global packages: $GLOBALPACKAGES"
+
+            # Split packages by comma and verify each one
+            IFS=',' read -ra PACKAGES <<< "$GLOBALPACKAGES"
+            for package in "${PACKAGES[@]}"; do
+                package=$(echo "$package" | xargs)  # Trim whitespace
+                if [ -n "$package" ]; then
+                    if pip show "$package" &> /dev/null; then
+                        log_success "✓ $package is installed"
+                    else
+                        log_error "✗ $package is NOT installed"
+                    fi
+                fi
+            done
+        else
+            log_info "No global packages specified"
+        fi
+    fi
 else
     log_error "✗ Pyenv command not found in PATH"
 fi
