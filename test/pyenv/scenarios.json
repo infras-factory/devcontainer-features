@@ -25,5 +25,35 @@
       "pyenv": {}
     },
     "remoteUser": "vscode"
+  },
+  "test-python-version": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "pyenv": {
+        "defaultPythonVersion": "3.11.5"
+      }
+    },
+    "remoteUser": "vscode"
+  },
+  "test-virtualenv": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "pyenv": {
+        "defaultPythonVersion": "3.10.12",
+        "autoCreateVirtualenv": true
+      }
+    },
+    "remoteUser": "vscode"
+  },
+  "test-custom-virtualenv-name": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "pyenv": {
+        "defaultPythonVersion": "3.11.5",
+        "autoCreateVirtualenv": true,
+        "virtualenvName": "myproject-dev"
+      }
+    },
+    "remoteUser": "vscode"
   }
 }
