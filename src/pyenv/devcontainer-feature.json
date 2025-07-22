@@ -9,6 +9,13 @@
         "devcontainer",
         "feature"
     ],
+    "options": {
+        "defaultPythonVersion": {
+            "type": "string",
+            "default": "",
+            "description": "Specify Python version to install (e.g., '3.11.5'). Priority: .python-version file → defaultPythonVersion option → latest LTS version."
+        }
+    },
     "installsAfter": [
         "ghcr.io/devcontainers/features/common-utils",
         "ghcr.io/devcontainers/features/git"

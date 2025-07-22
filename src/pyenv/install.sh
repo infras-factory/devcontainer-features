@@ -28,6 +28,14 @@ log_error() {
 }
 
 # ----------------------------------------
+# Feature Options
+# ----------------------------------------
+DEFAULTPYTHONVERSION="${DEFAULTPYTHONVERSION:-}"
+
+log_info "Feature options:"
+log_info "  - defaultPythonVersion: ${DEFAULTPYTHONVERSION:-'(empty - priority: .python-version → defaultPythonVersion → latest LTS)'}"
+
+# ----------------------------------------
 # Install Required Dependencies
 # ----------------------------------------
 log_info "Installing required dependencies..."
@@ -81,6 +89,16 @@ log_success "Pyenv build dependencies installed successfully"
 # ----------------------------------------
 log_info "Note: pyenv itself will be installed per-user in post-create script"
 log_info "This ensures proper permissions and user-specific configuration"
+
+# ----------------------------------------
+# Store Feature Configuration
+# ----------------------------------------
+log_info "Storing feature configuration..."
+
+mkdir -p /usr/local/share/pyenv/configs
+echo "DEFAULTPYTHONVERSION=${DEFAULTPYTHONVERSION}" > /usr/local/share/pyenv/configs/feature-options.env
+
+log_success "Feature configuration stored successfully"
 
 # ----------------------------------------
 # Copy Feature Scripts and Configs

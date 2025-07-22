@@ -114,6 +114,22 @@ else
 fi
 
 # ----------------------------------------
+# Load Feature Configuration
+# ----------------------------------------
+log_info "Loading feature configuration..."
+
+FEATURE_OPTIONS_FILE="/usr/local/share/pyenv/configs/feature-options.env"
+if [ -f "$FEATURE_OPTIONS_FILE" ]; then
+    # shellcheck disable=SC1090,SC1091
+    source "$FEATURE_OPTIONS_FILE"
+    log_info "Feature options loaded from: $FEATURE_OPTIONS_FILE"
+    log_info "  - DEFAULTPYTHONVERSION: ${DEFAULTPYTHONVERSION:-'(not set)'}"
+else
+    log_warning "Feature options file not found: $FEATURE_OPTIONS_FILE"
+    DEFAULTPYTHONVERSION=""
+fi
+
+# ----------------------------------------
 # Install Default Python Version
 # ----------------------------------------
 log_info "Setting up default Python version..."
@@ -127,7 +143,7 @@ WORKSPACE_DIR="/workspaces"
 PYTHON_VERSION_FILE=""
 PYTHON_VERSION=""
 
-# Look for .python-version file in workspace directories
+# Priority 1: Look for .python-version file in workspace directories
 if [ -d "$WORKSPACE_DIR" ]; then
     for dir in "$WORKSPACE_DIR"/*; do
         if [ -f "$dir/.python-version" ]; then
@@ -135,17 +151,26 @@ if [ -d "$WORKSPACE_DIR" ]; then
             PYTHON_VERSION=$(tr -d '[:space:]' < "$PYTHON_VERSION_FILE")
             log_info "Found .python-version file at: $PYTHON_VERSION_FILE"
             log_info "Python version specified: $PYTHON_VERSION"
+            log_info "Priority: Using .python-version file"
             break
         fi
     done
 fi
 
-# If no .python-version file found, use latest stable
+# Priority 2: Use defaultPythonVersion option if no .python-version file found
+if [ -z "$PYTHON_VERSION" ] && [ -n "$DEFAULTPYTHONVERSION" ]; then
+    PYTHON_VERSION="$DEFAULTPYTHONVERSION"
+    log_info "Using defaultPythonVersion option: $PYTHON_VERSION"
+    log_info "Priority: Using defaultPythonVersion feature option"
+fi
+
+# Priority 3: Use latest LTS if neither .python-version nor defaultPythonVersion are set
 if [ -z "$PYTHON_VERSION" ]; then
-    log_info "No .python-version file found in workspace, determining latest stable Python version..."
+    log_info "No .python-version file or defaultPythonVersion option found, determining latest LTS Python version..."
     # Get the latest stable Python version (excluding pre-releases, dev, and rc versions)
     PYTHON_VERSION=$(pyenv install --list | grep -E '^\s*[0-9]+\.[0-9]+\.[0-9]+$' | tail -1 | xargs)
-    log_info "Latest stable Python version: $PYTHON_VERSION"
+    log_info "Latest LTS Python version: $PYTHON_VERSION"
+    log_info "Priority: Using latest LTS version"
 fi
 
 # Install the Python version if not already installed
