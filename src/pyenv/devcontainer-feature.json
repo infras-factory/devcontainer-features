@@ -29,6 +29,11 @@
             "type": "string",
             "default": "",
             "description": "Comma-separated list of packages to install globally (e.g., 'pip-tools,black,flake8')."
+        },
+        "virtualenvPackages": {
+            "type": "string",
+            "default": "",
+            "description": "Comma-separated list of packages to install in the virtual environment (e.g., 'django,requests,pytest'). Only applies when autoCreateVirtualenv is true."
         }
     },
     "installsAfter": [

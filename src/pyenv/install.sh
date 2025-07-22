@@ -34,12 +34,14 @@ DEFAULTPYTHONVERSION="${DEFAULTPYTHONVERSION:-}"
 AUTOCREATEVIRTUALENV="${AUTOCREATEVIRTUALENV:-false}"
 VIRTUALENVNAME="${VIRTUALENVNAME:-}"
 GLOBALPACKAGES="${GLOBALPACKAGES:-}"
+VIRTUALENVPACKAGES="${VIRTUALENVPACKAGES:-}"
 
 log_info "Feature options:"
 log_info "  - defaultPythonVersion: ${DEFAULTPYTHONVERSION:-'(empty - priority: .python-version → defaultPythonVersion → latest LTS)'}"
 log_info "  - autoCreateVirtualenv: ${AUTOCREATEVIRTUALENV}"
 log_info "  - virtualenvName: ${VIRTUALENVNAME:-'(empty - will auto-generate)'}"
 log_info "  - globalPackages: ${GLOBALPACKAGES:-'(empty)'}"
+log_info "  - virtualenvPackages: ${VIRTUALENVPACKAGES:-'(empty)'}"
 
 # ----------------------------------------
 # Install Required Dependencies
@@ -107,6 +109,7 @@ mkdir -p /usr/local/share/pyenv/configs
     echo "AUTOCREATEVIRTUALENV=${AUTOCREATEVIRTUALENV}"
     echo "VIRTUALENVNAME=${VIRTUALENVNAME}"
     echo "GLOBALPACKAGES=${GLOBALPACKAGES}"
+    echo "VIRTUALENVPACKAGES=${VIRTUALENVPACKAGES}"
 } > /usr/local/share/pyenv/configs/feature-options.env
 
 log_success "Feature configuration stored successfully"

@@ -65,5 +65,16 @@
       }
     },
     "remoteUser": "vscode"
+  },
+  "test-virtualenv-packages": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "pyenv": {
+        "defaultPythonVersion": "3.11.5",
+        "autoCreateVirtualenv": true,
+        "virtualenvPackages": "requests,pytest"
+      }
+    },
+    "remoteUser": "vscode"
   }
 }

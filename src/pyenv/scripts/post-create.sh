@@ -127,12 +127,14 @@ if [ -f "$FEATURE_OPTIONS_FILE" ]; then
     log_info "  - AUTOCREATEVIRTUALENV: ${AUTOCREATEVIRTUALENV:-'(not set)'}"
     log_info "  - VIRTUALENVNAME: ${VIRTUALENVNAME:-'(not set)'}"
     log_info "  - GLOBALPACKAGES: ${GLOBALPACKAGES:-'(not set)'}"
+    log_info "  - VIRTUALENVPACKAGES: ${VIRTUALENVPACKAGES:-'(not set)'}"
 else
     log_warning "Feature options file not found: $FEATURE_OPTIONS_FILE"
     DEFAULTPYTHONVERSION=""
     AUTOCREATEVIRTUALENV="false"
     VIRTUALENVNAME=""
     GLOBALPACKAGES=""
+    VIRTUALENVPACKAGES=""
 fi
 
 # ----------------------------------------
@@ -290,6 +292,27 @@ if [ "$AUTOCREATEVIRTUALENV" = "true" ]; then
     CURRENT_PYTHON=$(pyenv version-name)
     log_success "Virtual environment setup completed"
     log_info "Active environment: $CURRENT_PYTHON"
+
+    # ----------------------------------------
+    # Install Virtual Environment Packages
+    # ----------------------------------------
+    if [ -n "$VIRTUALENVPACKAGES" ]; then
+        log_info "Installing virtual environment packages..."
+
+        # Split packages by comma and install each one
+        IFS=',' read -ra PACKAGES <<< "$VIRTUALENVPACKAGES"
+        for package in "${PACKAGES[@]}"; do
+            package=$(echo "$package" | xargs)  # Trim whitespace
+            if [ -n "$package" ]; then
+                log_info "Installing $package..."
+                pip install "$package" || log_warning "Failed to install $package"
+            fi
+        done
+
+        # Rehash pyenv to make new commands available
+        pyenv rehash
+        log_success "Virtual environment packages installation completed"
+    fi
 else
     log_info "Auto-create virtual environment is disabled"
 fi

@@ -228,6 +228,35 @@ if command -v pyenv &> /dev/null; then
         else
             log_info "No global packages specified"
         fi
+
+        # ----------------------------------------
+        # Verify Virtual Environment Packages
+        # ----------------------------------------
+        if [ "$AUTOCREATEVIRTUALENV" = "true" ] && [ -n "$VIRTUALENVPACKAGES" ]; then
+            echo ""
+            log_info "Checking virtual environment packages..."
+            log_info "Expected virtualenv packages: $VIRTUALENVPACKAGES"
+
+            # Check if we're in a virtualenv
+            if echo "$CURRENT_PYTHON" | grep -q '/'; then
+                log_info "Currently in virtualenv: $CURRENT_PYTHON"
+
+                # Split packages by comma and verify each one
+                IFS=',' read -ra VENV_PACKAGES <<< "$VIRTUALENVPACKAGES"
+                for package in "${VENV_PACKAGES[@]}"; do
+                    package=$(echo "$package" | xargs)  # Trim whitespace
+                    if [ -n "$package" ]; then
+                        if pip show "$package" &> /dev/null; then
+                            log_success "✓ $package is installed in virtualenv"
+                        else
+                            log_error "✗ $package is NOT installed in virtualenv"
+                        fi
+                    fi
+                done
+            else
+                log_warning "Not in a virtual environment, cannot verify virtualenv packages"
+            fi
+        fi
     fi
 else
     log_error "✗ Pyenv command not found in PATH"
