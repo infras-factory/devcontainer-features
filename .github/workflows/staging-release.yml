@@ -1,4 +1,5 @@
 name: Staging Release
+run-name: "Deploy '${{ github.head_ref }}' to Staging '${{ github.run_number }}'"
 
 on:
   pull_request:
@@ -272,8 +273,9 @@ jobs:
           # Get current version
           CURRENT_VERSION=$(jq -r .version "$FEATURE_PATH")
 
-          # Create pre-release version with PR number
-          STAGING_VERSION="${CURRENT_VERSION}-pre.${{ github.event.pull_request.number }}"
+          # Create pre-release version with PR number and build number
+          # This ensures each new commit in PR gets incremental pre-release number
+          STAGING_VERSION="${CURRENT_VERSION}-pre.${{ github.event.pull_request.number }}.${{ github.run_number }}"
 
           # Update version in devcontainer-feature.json
           jq ".version = \"$STAGING_VERSION\"" "$FEATURE_PATH" > tmp.json
