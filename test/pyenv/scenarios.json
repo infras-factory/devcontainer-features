@@ -1,0 +1,80 @@
+{
+  "test-debian": {
+    "image": "debian:12",
+    "features": {
+      "ghcr.io/devcontainers/features/common-utils:2": {
+        "username": "vscode"
+      },
+      "pyenv": {}
+    },
+    "remoteUser": "vscode"
+  },
+  "test-ubuntu": {
+    "image": "ubuntu:22.04",
+    "features": {
+      "ghcr.io/devcontainers/features/common-utils:2": {
+        "username": "vscode"
+      },
+      "pyenv": {}
+    },
+    "remoteUser": "vscode"
+  },
+  "test": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "pyenv": {}
+    },
+    "remoteUser": "vscode"
+  },
+  "test-python-version": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "pyenv": {
+        "defaultPythonVersion": "3.11.5"
+      }
+    },
+    "remoteUser": "vscode"
+  },
+  "test-virtualenv": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "pyenv": {
+        "defaultPythonVersion": "3.10.12",
+        "autoCreateVirtualenv": true
+      }
+    },
+    "remoteUser": "vscode"
+  },
+  "test-custom-virtualenv-name": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "pyenv": {
+        "defaultPythonVersion": "3.11.5",
+        "autoCreateVirtualenv": true,
+        "virtualenvName": "myproject-dev"
+      }
+    },
+    "remoteUser": "vscode"
+  },
+  "test-global-packages": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "pyenv": {
+        "defaultPythonVersion": "3.11.5",
+        "globalPackages": "pip-tools,black"
+      }
+    },
+    "remoteUser": "vscode"
+  },
+  "test-virtualenv-packages": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "pyenv": {
+        "defaultPythonVersion": "3.11.5",
+        "autoCreateVirtualenv": true,
+        "virtualenvPackages": "requests,pytest"
+      }
+    },
+    "remoteUser": "vscode"
+  }
+}

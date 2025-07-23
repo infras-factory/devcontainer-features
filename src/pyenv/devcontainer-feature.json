@@ -1,0 +1,46 @@
+{
+    "id": "pyenv",
+    "name": "Python Version Management (pyenv)",
+    "description": "Installs pyenv for managing multiple Python versions in your development container",
+    "version": "1.0.0",
+    "documentationURL": "https://github.com/infras-factory/devcontainer-features/pyenv",
+    "keywords": [
+        "pyenv",
+        "devcontainer",
+        "feature"
+    ],
+    "options": {
+        "defaultPythonVersion": {
+            "type": "string",
+            "default": "",
+            "description": "Specify Python version to install (e.g., '3.11.5'). Priority: .python-version file → defaultPythonVersion option → latest LTS version."
+        },
+        "autoCreateVirtualenv": {
+            "type": "boolean",
+            "default": false,
+            "description": "Automatically create and activate a virtual environment using pyenv-virtualenv."
+        },
+        "virtualenvName": {
+            "type": "string",
+            "default": "",
+            "description": "Name for the virtual environment. If empty, auto-generates based on project/Python version (e.g., 'myapp-py311')."
+        },
+        "globalPackages": {
+            "type": "string",
+            "default": "",
+            "description": "Comma-separated list of packages to install globally (e.g., 'pip-tools,black,flake8')."
+        },
+        "virtualenvPackages": {
+            "type": "string",
+            "default": "",
+            "description": "Comma-separated list of packages to install in the virtual environment (e.g., 'django,requests,pytest'). Only applies when autoCreateVirtualenv is true."
+        }
+    },
+    "installsAfter": [
+        "ghcr.io/devcontainers/features/common-utils",
+        "ghcr.io/devcontainers/features/git"
+    ],
+    "postAttachCommand": "/bin/bash /usr/local/share/pyenv/scripts/post-attach.sh",
+    "postCreateCommand": "/bin/bash /usr/local/share/pyenv/scripts/post-create.sh",
+    "postStartCommand": "/bin/bash /usr/local/share/pyenv/scripts/post-start.sh"
+}
