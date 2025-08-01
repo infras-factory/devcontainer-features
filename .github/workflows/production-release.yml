@@ -1,0 +1,294 @@
+name: Production Release
+run-name: "🚀 Production: PR #${{ github.event.pull_request.number }} merged by @${{ github.event.pull_request.merged_by.login }}"
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  detect-changes:
+    name: Detect Changed Features
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    outputs:
+      changed-features: ${{ steps.changes.outputs.features }}
+      has-changes: ${{ steps.changes.outputs.has-changes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Detect changed features in PR
+        id: changes
+        run: |
+          echo "Detecting features changed in PR #${{ github.event.pull_request.number }}"
+
+          # Get the merge base
+          MERGE_BASE=$(git merge-base origin/main HEAD~1)
+
+          # Get list of changed files in src/
+          CHANGED_FILES=$(git diff --name-only $MERGE_BASE HEAD | grep "^src/" || true)
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No changes in src/ directory"
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+            echo "features=[]" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Extract unique feature names
+          FEATURES=""
+          for file in $CHANGED_FILES; do
+            feature=$(echo "$file" | cut -d'/' -f2)
+            if [ -n "$feature" ] && [ -d "src/$feature" ]; then
+              FEATURES="$FEATURES $feature"
+            fi
+          done
+
+          # Remove duplicates
+          UNIQUE_FEATURES=$(echo "$FEATURES" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+
+          # Create JSON array
+          JSON_ARRAY="["
+          first=true
+          for feature in $UNIQUE_FEATURES; do
+            if [ "$first" = true ]; then
+              first=false
+            else
+              JSON_ARRAY="$JSON_ARRAY,"
+            fi
+            JSON_ARRAY="$JSON_ARRAY\"$feature\""
+          done
+          JSON_ARRAY="$JSON_ARRAY]"
+
+          echo "Changed features: $JSON_ARRAY"
+          # Sample outputs:
+          # features=["ohmyzsh","pyenv"]
+          # has-changes=true
+          echo "features=$JSON_ARRAY" >> $GITHUB_OUTPUT
+          echo "has-changes=true" >> $GITHUB_OUTPUT
+
+  publish-features:
+    name: Publish Feature - ${{ matrix.feature }}
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    strategy:
+      matrix:
+        feature: ${{ fromJson(needs.detect-changes.outputs.changed-features) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get feature version
+        id: version
+        run: |
+          FEATURE_PATH="src/${{ matrix.feature }}/devcontainer-feature.json"
+          VERSION=$(jq -r .version "$FEATURE_PATH")
+          # Sample outputs:
+          # version=1.0.1
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Feature ${{ matrix.feature }} version: $VERSION"
+
+          # Sample console output:
+          # Feature ohmyzsh version: 1.0.1
+
+      - name: Validate feature
+        uses: devcontainers/action@v1
+        with:
+          validate-only: true
+          base-path-to-features: "./src"
+          features: '["${{ matrix.feature }}"]'
+
+      - name: Publish production feature
+        uses: devcontainers/action@v1
+        with:
+          publish-features: true
+          base-path-to-features: "./src"
+          generate-docs: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          # Sample GitHub Step Summary output:
+          # ### ✅ Published: ohmyzsh
+          #
+          # **Version:** 1.0.1
+          # **Registry:** ghcr.io/infras-factory/devcontainer-features/ohmyzsh
+          #
+          # **Available tags:**
+          # - `1.0.1` (specific version)
+          # - `latest` (latest stable)
+          # - `1` (major version)
+          # - `1.0` (major.minor version)
+
+          echo "### ✅ Published: ${{ matrix.feature }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** ghcr.io/${{ github.repository }}/${{ matrix.feature }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Available tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.version.outputs.version }}\` (specific version)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`latest\` (latest stable)" >> $GITHUB_STEP_SUMMARY
+
+          # Extract major and minor versions for additional tags
+          MAJOR=$(echo "${{ steps.version.outputs.version }}" | cut -d. -f1)
+          MINOR=$(echo "${{ steps.version.outputs.version }}" | cut -d. -f1,2)
+          echo "- \`$MAJOR\` (major version)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`$MINOR\` (major.minor version)" >> $GITHUB_STEP_SUMMARY
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [detect-changes, publish-features]
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          # Sample inputs:
+          # FEATURES='["ohmyzsh","pyenv"]'
+          # PR_NUMBER='42'
+          # PR_TITLE='feat: add Oh My Zsh Enhanced feature'
+          # PR_AUTHOR='octocat'
+
+          FEATURES='${{ needs.detect-changes.outputs.changed-features }}'
+          PR_NUMBER='${{ github.event.pull_request.number }}'
+          PR_TITLE='${{ github.event.pull_request.title }}'
+          PR_AUTHOR='${{ github.event.pull_request.user.login }}'
+
+          # Create release notes
+          cat > release-notes.md << EOF
+          ## 🎉 Features Released
+
+          This release includes updates from PR #${PR_NUMBER}: **${PR_TITLE}** by @${PR_AUTHOR}
+
+          ### 📦 Updated Features
+
+          EOF
+
+          # Add each feature with version and description
+          # Sample output for each feature:
+          # #### ohmyzsh v1.0.1
+          # Oh My Zsh Enhanced with Powerlevel10k theme and productivity plugins
+          #
+          # ```json
+          # "ghcr.io/infras-factory/devcontainer-features/ohmyzsh:1.0.1": {}
+          # ```
+
+          for feature in $(echo "$FEATURES" | jq -r '.[]'); do
+            if [ -f "src/$feature/devcontainer-feature.json" ]; then
+              version=$(jq -r .version "src/$feature/devcontainer-feature.json")
+              description=$(jq -r .description "src/$feature/devcontainer-feature.json")
+              echo "#### $feature v$version" >> release-notes.md
+              echo "$description" >> release-notes.md
+              echo "" >> release-notes.md
+              echo "\`\`\`json" >> release-notes.md
+              echo "\"ghcr.io/${{ github.repository }}/$feature:$version\": {}" >> release-notes.md
+              echo "\`\`\`" >> release-notes.md
+              echo "" >> release-notes.md
+            fi
+          done
+
+          echo "### 🚀 Installation" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "Add to your \`devcontainer.json\`:" >> release-notes.md
+          echo "\`\`\`json" >> release-notes.md
+          echo "{" >> release-notes.md
+          echo "  \"features\": {" >> release-notes.md
+
+          # Build features list
+          FEATURE_LIST=""
+          for feature in $(echo "$FEATURES" | jq -r '.[]'); do
+            if [ -f "src/$feature/devcontainer-feature.json" ]; then
+              version=$(jq -r .version "src/$feature/devcontainer-feature.json")
+              if [ -n "$FEATURE_LIST" ]; then
+                FEATURE_LIST="$FEATURE_LIST,"
+              fi
+              FEATURE_LIST="$FEATURE_LIST\n    \"ghcr.io/${{ github.repository }}/$feature:$version\": {}"
+            fi
+          done
+          echo -e "$FEATURE_LIST" >> release-notes.md
+
+          echo "  }" >> release-notes.md
+          echo "}" >> release-notes.md
+          echo "\`\`\`" >> release-notes.md
+
+          echo "" >> release-notes.md
+          echo "---" >> release-notes.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}" >> release-notes.md
+
+          # Sample complete release-notes.md output:
+          # ## 🎉 Features Released
+          #
+          # This release includes updates from PR #42: **feat: add Oh My Zsh Enhanced feature** by @octocat
+          #
+          # ### 📦 Updated Features
+          #
+          # #### ohmyzsh v1.0.1
+          # Oh My Zsh Enhanced with Powerlevel10k theme and productivity plugins
+          #
+          # ```json
+          # "ghcr.io/infras-factory/devcontainer-features/ohmyzsh:1.0.1": {}
+          # ```
+          #
+          # ### 🚀 Installation
+          #
+          # Add to your `devcontainer.json`:
+          # ```json
+          # {
+          #   "features": {
+          #     "ghcr.io/infras-factory/devcontainer-features/ohmyzsh:1.0.1": {}
+          #   }
+          # }
+          # ```
+          #
+          # ---
+          # **Full Changelog**: https://github.com/infras-factory/devcontainer-features/pull/42
+
+      - name: Create release tag
+        id: tag
+        run: |
+          # Create a release tag based on date and PR number
+          # Sample: 2024.01.15
+          DATE=$(date +%Y.%m.%d)
+          TAG="${DATE}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+          # Create and push tag
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release from PR #${{ github.event.pull_request.number }}"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          body_path: release-notes.md
+          draft: false
+          prerelease: false
