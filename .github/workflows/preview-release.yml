@@ -1,0 +1,370 @@
+name: Preview Release
+run-name: "👀 Preview: PR #${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }} (Run #${{ github.run_number }})"
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - '.github/workflows/preview-release.yml'
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+
+jobs:
+  lint-and-validate:
+    name: Lint & Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate devcontainer-feature.json files
+        uses: devcontainers/action@v1
+        with:
+          validate-only: true
+          base-path-to-features: "./src"
+
+      - name: Install shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Lint shell scripts
+        run: |
+          find ./src -name "*.sh" -type f | while read script; do
+            echo "Checking $script"
+            shellcheck -x "$script"
+          done
+
+      - name: Check JSON formatting
+        run: |
+          find ./src -name "*.json" -type f | while read jsonfile; do
+            echo "Checking $jsonfile"
+            python3 -m json.tool "$jsonfile" > /dev/null || exit 1
+          done
+
+  detect-changes:
+    name: Detect Changed Features
+    runs-on: ubuntu-latest
+    needs: lint-and-validate
+    outputs:
+      changed-features: ${{ steps.changes.outputs.features }}
+      has-changes: ${{ steps.changes.outputs.has-changes }}
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed features
+        id: changes
+        run: |
+          echo "Detecting changes between origin/${{ github.base_ref }} and HEAD"
+
+          # Get list of changed files in src/
+          # Sample output: src/ohmyzsh/install.sh src/ohmyzsh/devcontainer-feature.json src/pyenv/install.sh
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep "^src/" || true)
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No changes in src/ directory"
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+            echo "features=[]" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Extract unique feature names
+          FEATURES=""
+          for file in $CHANGED_FILES; do
+            # Extract feature name from path (src/FEATURE_NAME/...)
+            feature=$(echo "$file" | cut -d'/' -f2)
+            if [ -n "$feature" ] && [ -d "src/$feature" ]; then
+              FEATURES="$FEATURES $feature"
+            fi
+          done
+
+          # Remove duplicates
+          UNIQUE_FEATURES=$(echo "$FEATURES" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+
+          # Create JSON array
+          JSON_ARRAY="["
+          first=true
+          for feature in $UNIQUE_FEATURES; do
+            if [ "$first" = true ]; then
+              first=false
+            else
+              JSON_ARRAY="$JSON_ARRAY,"
+            fi
+            JSON_ARRAY="$JSON_ARRAY\"$feature\""
+          done
+          JSON_ARRAY="$JSON_ARRAY]"
+
+          echo "Changed features: $JSON_ARRAY"
+          # Sample outputs:
+          # features=["ohmyzsh","pyenv"]
+          # has-changes=true
+          echo "features=$JSON_ARRAY" >> $GITHUB_OUTPUT
+          echo "has-changes=true" >> $GITHUB_OUTPUT
+
+  test-features:
+    name: Test Feature - ${{ matrix.feature }}
+    runs-on: self-hosted
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        feature: ${{ fromJson(needs.detect-changes.outputs.changed-features) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install @devcontainers/cli
+        run: npm install -g @devcontainers/cli
+
+      - name: Test feature
+        run: |
+          echo "Testing feature: ${{ matrix.feature }}"
+
+          # Run all tests defined in the feature's test directory
+          # This includes scenarios.json and any test.sh files
+          devcontainer features test \
+            --features ${{ matrix.feature }} \
+            --log-level info \
+            .
+
+  auto-bump-version:
+    name: Auto Bump Version
+    runs-on: ubuntu-latest
+    needs: [detect-changes, test-features]
+    if: |
+      needs.detect-changes.outputs.has-changes == 'true' &&
+      github.event.pull_request.user.login != 'github-actions[bot]'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Setup git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Auto bump versions
+        run: |
+          FEATURES='${{ needs.detect-changes.outputs.changed-features }}'
+          BUMPED_FEATURES=""
+
+          for feature in $(echo "$FEATURES" | jq -r '.[]'); do
+            FEATURE_PATH="src/$feature/devcontainer-feature.json"
+
+            # Check if feature exists in main branch (existing feature)
+            if git show origin/main:"$FEATURE_PATH" >/dev/null 2>&1; then
+              echo "Feature $feature exists in main branch"
+
+              # Get version from main branch
+              MAIN_VERSION=$(git show origin/main:"$FEATURE_PATH" | jq -r .version)
+              # Get current version in PR
+              CURRENT_VERSION=$(jq -r .version "$FEATURE_PATH")
+
+              echo "Main version: $MAIN_VERSION, PR version: $CURRENT_VERSION"
+
+              # Compare versions
+              NEEDS_BUMP=false
+
+              # Parse versions for comparison
+              IFS='.' read -r MAIN_MAJOR MAIN_MINOR MAIN_PATCH <<< "$MAIN_VERSION"
+              IFS='.' read -r PR_MAJOR PR_MINOR PR_PATCH <<< "$CURRENT_VERSION"
+
+              # Convert to comparable numbers
+              MAIN_NUM=$((MAIN_MAJOR * 10000 + MAIN_MINOR * 100 + MAIN_PATCH))
+              PR_NUM=$((PR_MAJOR * 10000 + PR_MINOR * 100 + PR_PATCH))
+
+              if [ "$PR_NUM" -eq "$MAIN_NUM" ]; then
+                echo "Version not bumped yet, need to bump"
+                NEEDS_BUMP=true
+                NEW_PATCH=$((MAIN_PATCH + 1))
+              elif [ "$PR_NUM" -le "$MAIN_NUM" ]; then
+                echo "PR version ($CURRENT_VERSION) is outdated compared to main ($MAIN_VERSION)"
+                echo "Someone merged before us, need to bump higher than main"
+                NEEDS_BUMP=true
+                # Bump from main version, not PR version
+                NEW_PATCH=$((MAIN_PATCH + 1))
+              else
+                echo "Version already properly bumped ($MAIN_VERSION -> $CURRENT_VERSION)"
+              fi
+
+              if [ "$NEEDS_BUMP" = true ]; then
+                NEW_VERSION="$MAIN_MAJOR.$MAIN_MINOR.$NEW_PATCH"
+                echo "Bumping $feature to $NEW_VERSION"
+                jq ".version = \"$NEW_VERSION\"" "$FEATURE_PATH" > tmp.json
+                mv tmp.json "$FEATURE_PATH"
+                BUMPED_FEATURES="$BUMPED_FEATURES $feature"
+              fi
+            else
+              echo "Feature $feature is new, keeping initial version"
+            fi
+          done
+
+          # Commit if any versions were bumped
+          if [ -n "$BUMPED_FEATURES" ]; then
+            # Only add files that were actually bumped
+            for feature in $BUMPED_FEATURES; do
+              git add "src/$feature/devcontainer-feature.json"
+            done
+            git commit -m "chore: auto-bump feature versions for PR #${{ github.event.pull_request.number }}"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          else
+            echo "No version bumps needed"
+          fi
+
+  preview-release:
+    name: Preview Release
+    runs-on: ubuntu-latest
+    needs: [detect-changes, test-features, auto-bump-version]
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    strategy:
+      matrix:
+        feature: ${{ fromJson(needs.detect-changes.outputs.changed-features) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare preview feature
+        run: |
+          # Create a preview directory structure with folder name matching the preview ID
+          mkdir -p preview-src/${{ matrix.feature }}-preview
+          cp -r src/${{ matrix.feature }}/* preview-src/${{ matrix.feature }}-preview/
+
+          FEATURE_PATH="preview-src/${{ matrix.feature }}-preview/devcontainer-feature.json"
+
+          if [ ! -f "$FEATURE_PATH" ]; then
+            echo "Feature file not found: $FEATURE_PATH"
+            exit 1
+          fi
+
+          # Get current version
+          # Sample: 1.0.0
+          CURRENT_VERSION=$(jq -r .version "$FEATURE_PATH")
+
+          # Create pre-release version with PR number and build number
+          # Sample: 1.0.0-42.123
+          PREVIEW_VERSION="${CURRENT_VERSION}-${{ github.event.pull_request.number }}.${{ github.run_number }}"
+
+          # Update version AND id to create a separate preview feature
+          jq ".version = \"$PREVIEW_VERSION\" | .id = \"${{ matrix.feature }}-preview\"" "$FEATURE_PATH" > tmp.json
+          mv tmp.json "$FEATURE_PATH"
+
+          echo "Updated preview feature:"
+          echo "  - Folder: ${{ matrix.feature }}-preview"
+          echo "  - ID: ${{ matrix.feature }}-preview"
+          echo "  - Version: $PREVIEW_VERSION"
+          echo "This creates a completely separate feature for preview"
+
+          # Sample output:
+          # Updated preview feature:
+          #   - Folder: ohmyzsh-preview
+          #   - ID: ohmyzsh-preview
+          #   - Version: 1.0.0-42.123
+          # This creates a completely separate feature for preview
+
+      - name: Validate preview feature
+        uses: devcontainers/action@v1
+        with:
+          validate-only: true
+          base-path-to-features: "./preview-src"
+
+      - name: Publish preview feature
+        uses: devcontainers/action@v1
+        with:
+          publish-features: true
+          base-path-to-features: "./preview-src"
+          generate-docs: false
+          disable-repo-tagging: "true"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const feature = '${{ matrix.feature }}';
+            const previewFeaturePath = `preview-src/${feature}-preview/devcontainer-feature.json`;
+            const version = require('fs').readFileSync(previewFeaturePath, 'utf8');
+            const versionObj = JSON.parse(version);
+
+            const comment = `### 👀 Preview Release: ${feature}
+
+            Feature \`${feature}\` has been published as preview:
+
+            **Preview Feature ID:** \`${feature}-preview\`
+            **Version:** \`${versionObj.version}\`
+
+            To test this preview version, add to your devcontainer.json:
+            \`\`\`json
+            {
+              "features": {
+                "ghcr.io/${{ github.repository }}/${feature}-preview:${versionObj.version}": {}
+              }
+            }
+            \`\`\`
+
+            **Note:** Preview features have \`-preview\` suffix to keep them completely separate from production releases.
+            `;
+
+            // Find existing comment for this feature
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes(`Preview Release: ${feature}`)
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
