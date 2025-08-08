@@ -72,6 +72,80 @@ display_feature_status() {
         log_section_info "✗ Zsh not found"
     fi
 
+    # Shell Enhancement Features
+    log_subsection "Shell Enhancement ($SHELL_ENHANCEMENT_LEVEL)"
+
+    # Get ZSH_CUSTOM path
+    ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+
+    # Check for Powerlevel10k theme (all levels)
+    if [ -d "$ZSH_CUSTOM/themes/powerlevel10k" ]; then
+        log_section_info "✓ Powerlevel10k theme: installed"
+        if [ -f "$HOME/.p10k.zsh" ]; then
+            log_section_info "✓ P10k configuration: ready"
+        fi
+    else
+        log_section_info "✗ Powerlevel10k theme not found"
+    fi
+
+    # Check for plugins based on enhancement level
+    case "$SHELL_ENHANCEMENT_LEVEL" in
+        "minimal")
+            # Essential plugins
+            if [ -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
+                log_section_info "✓ Autosuggestions: enabled"
+            fi
+            if [ -d "$ZSH_CUSTOM/plugins/you-should-use" ]; then
+                log_section_info "✓ Command hints: enabled"
+            fi
+            ;;
+        "standard")
+            # Standard plugins
+            if [ -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
+                log_section_info "✓ Autosuggestions: enabled"
+            fi
+            if [ -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]; then
+                log_section_info "✓ Syntax highlighting: enabled"
+            fi
+            if [ -d "$ZSH_CUSTOM/plugins/you-should-use" ]; then
+                log_section_info "✓ Command hints: enabled"
+            fi
+            if [ -d "$ZSH_CUSTOM/plugins/zsh-history-substring-search" ]; then
+                log_section_info "✓ History search: enhanced"
+            fi
+            if [ -d "$ZSH_CUSTOM/plugins/z" ]; then
+                log_section_info "✓ Z directory jumper: enabled"
+            fi
+            ;;
+        "poweruser")
+            # All plugins
+            if [ -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
+                log_section_info "✓ Autosuggestions: enabled"
+            fi
+            if [ -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]; then
+                log_section_info "✓ Syntax highlighting: enabled"
+            fi
+            if [ -d "$ZSH_CUSTOM/plugins/you-should-use" ]; then
+                log_section_info "✓ Command hints: enabled"
+            fi
+            if [ -d "$ZSH_CUSTOM/plugins/zsh-history-substring-search" ]; then
+                log_section_info "✓ History search: enhanced"
+            fi
+            if [ -d "$ZSH_CUSTOM/plugins/z" ]; then
+                log_section_info "✓ Z directory jumper: enabled"
+            fi
+            if [ -d "$ZSH_CUSTOM/plugins/fzf-zsh-plugin" ]; then
+                log_section_info "✓ FZF integration: enabled"
+            fi
+            if [ -d "$ZSH_CUSTOM/plugins/git-extras" ]; then
+                log_section_info "✓ Git extras: enabled"
+            fi
+            if [ -d "$ZSH_CUSTOM/plugins/zsh-vi-mode" ]; then
+                log_section_info "✓ Vi mode: enabled"
+            fi
+            ;;
+    esac
+
     # Git Feature
     log_subsection "Version Control"
     if check_command "git"; then
@@ -188,6 +262,16 @@ display_feature_status() {
     log_section_info "• Claude CLI:      claude --help"
     log_section_info "• Pre-commit:      pre-commit install"
     log_section_info "• Node version:    nvm list / nvm use"
+
+    # Shell-specific commands based on enhancement level
+    if [ "$SHELL_ENHANCEMENT_LEVEL" != "minimal" ]; then
+        log_section_info "• Jump to dir:     z <partial-path>"
+    fi
+    if [ "$SHELL_ENHANCEMENT_LEVEL" = "poweruser" ]; then
+        log_section_info "• Fuzzy search:    Ctrl+R (history), Ctrl+T (files)"
+        log_section_info "• Vi mode:         Press ESC in terminal"
+    fi
+
     if [ "$ENABLE_SERENA" = "true" ]; then
         log_section_info "• Serena help:     uvx --from git+https://github.com/oraios/serena serena --help"
         log_section_info "• Re-index code:   uvx --from git+https://github.com/oraios/serena serena project index"

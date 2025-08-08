@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Test for riso-bootstrap feature on Ubuntu base image
-# Scenario: test-ubuntu-minimal
+# Scenario: test-ubuntu-poweruser (Shell Enhancement Level: poweruser)
 
 set -e
 
@@ -92,9 +92,9 @@ check "pip is installed" command -v pip
 check "pre-commit is installed" command -v pre-commit
 
 # ============================================
-# SECTION 5: Shell Enhancement Tests
+# SECTION 5: Poweruser Shell Enhancement Tests
 # ============================================
-echo -e "\n>>> Testing Shell Enhancement..."
+echo -e "\n>>> Testing Poweruser Shell Enhancement..."
 
 # Get test environment
 CURRENT_USER=$(whoami)
@@ -107,14 +107,26 @@ check "powerlevel10k configured in .zshrc" grep -q 'ZSH_THEME="powerlevel10k/pow
 check "p10k config copied to home" test -f "$USER_HOME/.p10k.zsh"
 check "p10k config sourced" grep -q "source ~/.p10k.zsh" "$USER_HOME/.zshrc"
 
-# Essential plugins (minimal level by default in test)
+# All plugins (minimal + standard + poweruser)
 check "zsh-autosuggestions installed" test -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 check "you-should-use installed" test -d "$ZSH_CUSTOM/plugins/you-should-use"
+check "zsh-syntax-highlighting installed" test -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+check "zsh-history-substring-search installed" test -d "$ZSH_CUSTOM/plugins/zsh-history-substring-search"
+check "zsh-autocomplete installed" test -d "$ZSH_CUSTOM/plugins/zsh-autocomplete"
+check "zsh-bat installed" test -d "$ZSH_CUSTOM/plugins/zsh-bat"
+
+# Poweruser plugins configured in .zshrc
+check "poweruser plugins configured" grep -q "zsh-autosuggestions you-should-use zsh-syntax-highlighting zsh-history-substring-search zsh-autocomplete zsh-bat" "$USER_HOME/.zshrc"
+
+# Ensure fast-syntax-highlighting is NOT installed (conflict prevention)
+check "fast-syntax-highlighting NOT installed" bash -c "! test -d \"$ZSH_CUSTOM/plugins/fast-syntax-highlighting\""
+check "fast-syntax-highlighting NOT in .zshrc" bash -c "! grep -q \"fast-syntax-highlighting\" \"$USER_HOME/.zshrc\""
 
 # Shell configurations
 check "shell enhancements section" grep -q "# Riso Bootstrap Shell Enhancements" "$USER_HOME/.zshrc"
 check "history size configured" grep -q "HISTSIZE=100000" "$USER_HOME/.zshrc"
 check "autosuggest style configured" grep -q "ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE" "$USER_HOME/.zshrc"
+check "history substring search bindings" grep -q "history-substring-search-up" "$USER_HOME/.zshrc"
 
 # Package manager detection
 if [ -f "/usr/local/share/riso-bootstrap/utils/layer-0/package-manager.sh" ]; then
@@ -130,7 +142,51 @@ if [ -f "/usr/local/share/riso-bootstrap/utils/layer-0/package-manager.sh" ]; th
     check "reject malicious package name" bash -c "! validate_package_name '../../etc/passwd'"
 fi
 
+# ============================================
+# SECTION 6: Poweruser Level Dependencies Tests
+# ============================================
+echo -e "\n>>> Testing Poweruser Level Dependencies..."
+
+# Bat dependency for zsh-bat plugin
+check "bat is installed" bash -c "command -v bat || command -v batcat"
+
+# Test bat functionality (if available)
+if command -v bat &> /dev/null; then
+    check "bat command works" bash -c "echo 'test' | bat --plain --language txt"
+elif command -v batcat &> /dev/null; then
+    check "batcat command works" bash -c "echo 'test' | batcat --plain --language txt"
+fi
+
+# ============================================
+# SECTION 7: Poweruser Performance Warning Tests
+# ============================================
+echo -e "\n>>> Testing Poweruser Performance Considerations..."
+
+# Check if performance warning was logged (this would be in post-create output)
+# We can't directly test log output here, but we can verify the configuration that triggers it
+check "autocomplete plugin warning context" bash -c "grep -q 'zsh-autocomplete' \"$USER_HOME/.zshrc\""
+
+# Verify that zsh-autocomplete is configured (high performance impact plugin)
+check "zsh-autocomplete in plugin list" bash -c "grep -E '^plugins=.*zsh-autocomplete' \"$USER_HOME/.zshrc\""
+
+# ============================================
+# SECTION 8: Poweruser Level Specific Validations
+# ============================================
+echo -e "\n>>> Testing Poweruser Level Specific Features..."
+
+# Verify all poweruser plugins are present
+check "all poweruser plugins installed" bash -c "
+    test -d \"$ZSH_CUSTOM/plugins/zsh-autosuggestions\" && \
+    test -d \"$ZSH_CUSTOM/plugins/you-should-use\" && \
+    test -d \"$ZSH_CUSTOM/plugins/zsh-syntax-highlighting\" && \
+    test -d \"$ZSH_CUSTOM/plugins/zsh-history-substring-search\" && \
+    test -d \"$ZSH_CUSTOM/plugins/zsh-autocomplete\" && \
+    test -d \"$ZSH_CUSTOM/plugins/zsh-bat\"
+"
+
+# Verify plugin order in .zshrc (important for some plugins)
+check "plugin order correct" bash -c "grep -E '^plugins=.*git.*zsh-autosuggestions.*you-should-use.*zsh-syntax-highlighting.*zsh-history-substring-search.*zsh-autocomplete.*zsh-bat' \"$USER_HOME/.zshrc\""
 
 echo -e "\n\033[1;36m════════════════════════════════════════════════════════════════════════════════\033[0m"
-echo -e "\033[1;36m🧪 riso-bootstrap scenario test: 'TEST-UBUNTU-MINIMAL' completed\033[0m"
+echo -e "\033[1;36m🧪 riso-bootstrap scenario test: 'TEST-UBUNTU-POWERUSER' completed\033[0m"
 echo -e "\033[1;36m════════════════════════════════════════════════════════════════════════════════\033[0m\n"

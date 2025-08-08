@@ -5,7 +5,30 @@
     "features": {
       "riso-bootstrap": {
         "projectName": "test-project",
-        "enableSerena": false
+        "enableSerena": false,
+        "shellEnhancementLevel": "minimal"
+      }
+    }
+  },
+    "test-ubuntu-standard": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "remoteUser": "vscode",
+    "features": {
+      "riso-bootstrap": {
+        "projectName": "test-project",
+        "enableSerena": false,
+        "shellEnhancementLevel": "standard"
+      }
+    }
+  },
+    "test-ubuntu-poweruser": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "remoteUser": "vscode",
+    "features": {
+      "riso-bootstrap": {
+        "projectName": "test-project",
+        "enableSerena": false,
+        "shellEnhancementLevel": "poweruser"
       }
     }
   },

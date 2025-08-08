@@ -65,13 +65,16 @@ import_utility_files IMPORT_FILES
 # ----------------------------------------
 # Function to copy scripts and utils to system directory
 copy_feature_files() {
-    mkdir -p "${FEATURE_TMP_DIR}"/{scripts,utils}
+    mkdir -p "${FEATURE_TMP_DIR}"/{scripts,utils,configs}
 
     # Copy utils folder
     copy_directory "./utils" "${FEATURE_TMP_DIR}/utils" "utils"
 
     # Copy scripts folder
     copy_directory "./scripts" "${FEATURE_TMP_DIR}/scripts" "scripts"
+
+    # Copy configs folder
+    copy_directory "./configs" "${FEATURE_TMP_DIR}/configs" "configs"
 }
 
 # Function to create feature options environment file
@@ -80,6 +83,7 @@ create_options_file() {
 # Riso Bootstrap Feature Options
 PROJECT_NAME="${PROJECTNAME:-""}"
 ENABLE_SERENA="${ENABLESERENA:-false}"
+SHELL_ENHANCEMENT_LEVEL="${SHELLENHANCEMENTLEVEL:-standard}"
 IS_TEST_MODE="${ISTESTMODE:-false}"
 # Constant variables
 FEATURE_TMP_DIR="${FEATURE_TMP_DIR}"

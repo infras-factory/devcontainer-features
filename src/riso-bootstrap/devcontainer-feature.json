@@ -14,6 +14,12 @@
       "default": false,
       "description": "Enable Serena coding agent toolkit for semantic code analysis"
     },
+    "shellEnhancementLevel": {
+      "type": "string",
+      "default": "standard",
+      "enum": ["minimal", "standard", "poweruser"],
+      "description": "Shell enhancement level - minimal: essential plugins only, standard: balanced features (recommended), poweruser: all features (may impact performance)"
+    },
     "isTestMode": {
       "type": "boolean",
       "default": false,
