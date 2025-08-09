@@ -1,0 +1,46 @@
+{
+  "test-ubuntu-minimal": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "remoteUser": "vscode",
+    "features": {
+      "riso-bootstrap": {
+        "projectName": "test-project",
+        "enableSerena": false,
+        "shellEnhancementLevel": "minimal"
+      }
+    }
+  },
+    "test-ubuntu-standard": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "remoteUser": "vscode",
+    "features": {
+      "riso-bootstrap": {
+        "projectName": "test-project",
+        "enableSerena": false,
+        "shellEnhancementLevel": "standard"
+      }
+    }
+  },
+    "test-ubuntu-poweruser": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "remoteUser": "vscode",
+    "features": {
+      "riso-bootstrap": {
+        "projectName": "test-project",
+        "enableSerena": false,
+        "shellEnhancementLevel": "poweruser"
+      }
+    }
+  },
+  "test-ubuntu-with-serena": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "remoteUser": "vscode",
+    "features": {
+      "riso-bootstrap": {
+        "projectName": "test-project",
+        "enableSerena": true,
+        "isTestMode": true
+      }
+    }
+  }
+}
