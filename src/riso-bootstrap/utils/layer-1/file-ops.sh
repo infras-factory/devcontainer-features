@@ -5,13 +5,15 @@ set -e
 # ----------------------------------------
 # Local Variables
 # ----------------------------------------
-LAYER_ZERO_DIR="./utils/layer-0/"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR="$(dirname "$SCRIPT_DIR")"
+LAYER_ZERO_DIR="${BASE_DIR}/layer-0"
 
 # ----------------------------------------
 # Import Utilities
 # ----------------------------------------
 # shellcheck source=../layer-0/logger.sh disable=SC1091
-source "${LAYER_ZERO_DIR}logger.sh"
+source "${LAYER_ZERO_DIR}/logger.sh"
 
 # ----------------------------------------
 # utils/file-ops.sh - File operations utilities for Riso Bootstrap
