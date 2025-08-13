@@ -250,6 +250,15 @@ fi
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# Claude Code alias with workflow enforcement
+alias cc="claude 'MANDATORY: Follow ~/.claude/CLAUDE.md workflow EXACTLY:
+  1. START with STEP 0: SESSION INITIALIZATION.
+  2. ALWAYS use AI-Supervisor for task analysis (STEP 1)
+  3. CONFIRM understanding before executing (STEP 2)
+  4. Use AI-Supervisor for verification when needed (STEP 4)
+  5. Complete with proper cleanup (STEP 5)
+  CRITICAL: Never skip steps.'"
 EOF
     fi
 }
