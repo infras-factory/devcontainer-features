@@ -61,6 +61,131 @@ setup_test_env() {
 }
 
 # ----------------------------------------
+# Test Functions
+# ----------------------------------------
+test_bash_scanner() {
+    print_test_start "bash-script-scanner"
+
+    # Source the scanner
+    # shellcheck source=/dev/null
+    source "$FEATURE_DIR/utils/layer-1/bash-script-scanner.sh"
+
+    # Create mock project structure
+    echo -e "${BLUE}Creating mock DevContainer feature project...${NC}" >&2
+    mkdir -p "$TEST_TMP_DIR/feature/scripts"
+    mkdir -p "$TEST_TMP_DIR/feature/utils"
+
+    # Create some test scripts
+    cat > "$TEST_TMP_DIR/feature/install.sh" << 'EOF'
+#!/bin/bash
+# Install script for test feature
+echo "Installing feature..."
+EOF
+    chmod +x "$TEST_TMP_DIR/feature/install.sh"
+
+    cat > "$TEST_TMP_DIR/feature/test.sh" << 'EOF'
+#!/bin/bash
+# Test runner for feature
+echo "Running tests..."
+EOF
+    chmod +x "$TEST_TMP_DIR/feature/test.sh"
+
+    cat > "$TEST_TMP_DIR/feature/utils/helper.sh" << 'EOF'
+#!/bin/bash
+# Helper utilities
+helper_function() {
+    echo "Helper"
+}
+EOF
+
+    # Create Makefile
+    cat > "$TEST_TMP_DIR/feature/Makefile" << 'EOF'
+test:
+	@echo "Running tests"
+build:
+	@echo "Building"
+EOF
+
+    # Test the scanner
+    echo -e "\n${BLUE}Running scanner on mock project...${NC}" >&2
+    scan_bash_project "$TEST_TMP_DIR/feature"
+
+    print_success "Bash scanner test completed"
+}
+
+# shellcheck disable=SC2317  # Will be called when test case is selected
+test_bash_analyzer() {
+    print_test_start "bash-analyzer"
+
+    # Source the analyzer
+    # shellcheck source=/dev/null
+    source "$FEATURE_DIR/utils/layer-1/bash-analyzer.sh"
+
+    # Create a more complex test script
+    echo -e "${BLUE}Creating test script with various patterns...${NC}" >&2
+    cat > "$TEST_TMP_DIR/complex-script.sh" << 'EOF'
+#!/bin/bash
+# This is a complex installation script
+# It installs various tools and sets up environment
+
+set -e
+
+# Source some utilities
+source ./utils/logger.sh
+. ./utils/helper.sh
+
+# Main installation function
+install_tools() {
+    echo "Installing tools..."
+
+    # Check for git
+    if command -v git >/dev/null 2>&1; then
+        git clone https://example.com/repo.git
+    fi
+
+    # Install with package managers
+    apt-get update
+    apt-get install -y curl wget
+    npm install -g some-package
+
+    setup_environment
+    validate_installation
+}
+
+setup_environment() {
+    echo "Setting up environment..."
+    docker pull nginx:latest
+}
+
+validate_installation() {
+    echo "Validating..."
+    make test
+}
+
+# Entry point
+main() {
+    install_tools
+    echo "Done!"
+}
+
+main "$@"
+EOF
+
+    # Test the analyzer on this script
+    echo -e "\n${BLUE}Running analyzer on test script...${NC}" >&2
+    analyze_bash_script "$TEST_TMP_DIR/complex-script.sh"
+
+    echo -e "\n${BLUE}Testing full project analysis...${NC}" >&2
+    # Create mini project
+    mkdir -p "$TEST_TMP_DIR/project"
+    cp "$TEST_TMP_DIR/complex-script.sh" "$TEST_TMP_DIR/project/install.sh"
+
+    analyze_all_scripts "$TEST_TMP_DIR/project"
+
+    print_success "Bash analyzer test completed"
+}
+
+# ----------------------------------------
 # Main Logic
 # ----------------------------------------
 main() {
@@ -80,9 +205,16 @@ main() {
 
     # Run the appropriate test
     case "$function_name" in
+        bash-scanner|scan)
+            test_bash_scanner
+            ;;
+        bash-analyzer|analyze)
+            test_bash_analyzer
+            ;;
         *)
             print_error "No test for function: $function_name"
             echo -e "${YELLOW}Add test for this function when it's implemented${NC}" >&2
+            echo -e "${YELLOW}Available tests: bash-scanner, bash-analyzer${NC}" >&2
             exit 1
             ;;
     esac
