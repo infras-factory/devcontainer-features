@@ -42,5 +42,16 @@
         "isTestMode": true
       }
     }
+  },
+  "test-ubuntu-project-context": {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "remoteUser": "vscode",
+    "features": {
+      "riso-bootstrap": {
+        "projectName": "test-project-context",
+        "shellEnhancementLevel": "minimal",
+        "isTestMode": true
+      }
+    }
   }
 }

@@ -9,9 +9,13 @@ FEATURE_TMP_DIR="/usr/local/share/riso-bootstrap"
 # Files to import for install.sh usage (format: "path:description")
 # shellcheck disable=SC2034
 IMPORT_FILES=(
-    "$FEATURE_TMP_DIR/utils/layer-0/logger.sh:Logger utilities"
+    "$FEATURE_TMP_DIR/utils/layer-0/logger.sh:Logging utilities"
     "$FEATURE_TMP_DIR/utils/layer-0/package-manager.sh:Package manager utilities"
-    "$FEATURE_TMP_DIR/riso-bootstrap-options.env:Feature options"
+    "$FEATURE_TMP_DIR/utils/layer-0/mock-generator.sh:Mock project generator"
+    "$FEATURE_TMP_DIR/utils/layer-0/project-detector.sh:Project technology detector"
+    "$FEATURE_TMP_DIR/utils/layer-2/bash-section-generator.sh:Bash section generator"
+    "$FEATURE_TMP_DIR/utils/layer-3/markdown-builder.sh:PROJECT.md builder"
+    "$FEATURE_TMP_DIR/riso-bootstrap-options.env:Feature configuration"
 )
 TOTAL_STEPS=4
 
@@ -305,6 +309,72 @@ setup_serena() {
     return 0
 }
 
+# ----------------------------------------
+# Generate Mock Projects for Testing
+# ----------------------------------------
+generate_mock_projects_for_testing() {
+    local test_dir="/tmp/riso-test-projects"
+    export DEBUG="true"
+
+    log_workflow_start "Mock Projects Generation for Testing"
+
+    # Remove existing test directory if it exists
+    if [ -d "$test_dir" ]; then
+        rm -rf "$test_dir"
+        log_workflow_step "Cleaned existing test directory"
+    fi
+
+    # Create test directory
+    mkdir -p "$test_dir"
+    log_workflow_step "Created test directory: $test_dir"
+
+    # Generate mock projects
+    log_workflow_step "Generating mock projects"
+    log_workflow_substep "DevContainer Feature project"
+    generate_mock_project "bash" "devcontainer" "$test_dir/devcontainer-feature" ""
+
+    log_workflow_substep "Python Flask project"
+    generate_mock_project "python" "flask" "$test_dir/python-flask" ""
+
+    log_workflow_substep "Node.js Express project"
+    generate_mock_project "nodejs" "express" "$test_dir/nodejs-express" ""
+
+    log_workflow_substep "Multi-tech combo project"
+    generate_mock_project "combo" "all-tech" "$test_dir/combo-project" ""
+
+    log_workflow_substep "Bash Scripts project"
+    generate_mock_project "bash" "scripts" "$test_dir/bash-scripts" ""
+
+    log_workflow_substep "Template project"
+    generate_mock_project "template" "cookiecutter" "$test_dir/template-project" ""
+
+    # Generate PROJECT.md for each mock project using markdown-builder
+    log_workflow_step "Generating PROJECT.md files for all mock projects"
+    local project_count=0
+    local successful_count=0
+
+    for project_dir in "$test_dir"/*; do
+        if [ -d "$project_dir" ]; then
+            project_count=$((project_count + 1))
+            local project_name
+            project_name=$(basename "$project_dir")
+            log_processing "PROJECT.md for $project_name"
+
+            cd "$project_dir" || continue
+            if generate_project_markdown "." "PROJECT.md" "true" 2>/dev/null; then
+                successful_count=$((successful_count + 1))
+                log_workflow_substep "Generated PROJECT.md for $project_name"
+            else
+                log_workflow_substep "Failed to generate PROJECT.md for $project_name"
+            fi
+            cd "$test_dir" || continue
+        fi
+    done
+
+    log_workflow_end "Mock Projects Generation for Testing"
+    log_result "Generated $successful_count/$project_count PROJECT.md files in $test_dir"
+}
+
 main() {
     # Auto-detect project name if not provided
     if [ -z "$PROJECT_NAME" ]; then
@@ -320,6 +390,14 @@ main() {
         setup_serena 4
     else
         log_section "Skipped: 4/$TOTAL_STEPS Serena setup (not enabled)"
+    fi
+
+    # Generate mock projects if in test mode
+    if [ "$IS_TEST_MODE" = "true" ]; then
+        log_workflow_start "Test Mode Setup"
+        log_workflow_step "Generating mock projects for PROJECT.md validation"
+        generate_mock_projects_for_testing
+        log_workflow_end "Test Mode Setup"
     fi
 }
 
