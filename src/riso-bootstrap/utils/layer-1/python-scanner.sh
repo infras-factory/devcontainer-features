@@ -77,6 +77,159 @@ find_python_entry_points() {
 }
 
 # ----------------------------------------
+# Function 3a: Detect Python testing framework
+# ----------------------------------------
+detect_testing_framework() {
+    local project_dir="${1:-.}"
+    local testing_framework=""
+
+    # Check for pytest
+    if [ -f "$project_dir/pytest.ini" ] || [ -f "$project_dir/.pytest.ini" ]; then
+        testing_framework="pytest"
+        log_info "Testing framework: pytest (pytest.ini found)"
+    elif [ -f "$project_dir/pyproject.toml" ] && grep -q "\[tool.pytest" "$project_dir/pyproject.toml" 2>/dev/null; then
+        testing_framework="pytest"
+        log_info "Testing framework: pytest (configured in pyproject.toml)"
+    elif [ -f "$project_dir/setup.cfg" ] && grep -q "\[tool:pytest\]" "$project_dir/setup.cfg" 2>/dev/null; then
+        testing_framework="pytest"
+        log_info "Testing framework: pytest (configured in setup.cfg)"
+    elif find "$project_dir" -type f -name "test_*.py" -o -name "*_test.py" 2>/dev/null | head -1 | grep -q .; then
+        # Check if test files use pytest
+        if find "$project_dir" -type f \( -name "test_*.py" -o -name "*_test.py" \) -exec grep -l "import pytest\|from pytest" {} \; 2>/dev/null | head -1 | grep -q .; then
+            testing_framework="pytest"
+            log_info "Testing framework: pytest (pytest imports in test files)"
+        fi
+    fi
+
+    # Check for unittest
+    if [ -z "$testing_framework" ]; then
+        if find "$project_dir" -type f -name "test*.py" -exec grep -l "import unittest\|from unittest" {} \; 2>/dev/null | head -1 | grep -q .; then
+            testing_framework="unittest"
+            log_info "Testing framework: unittest (standard library)"
+        fi
+    fi
+
+    # Check for coverage configuration
+    if [ -f "$project_dir/.coveragerc" ]; then
+        log_info "Coverage configuration: .coveragerc found"
+    elif [ -f "$project_dir/pyproject.toml" ] && grep -q "\[tool.coverage" "$project_dir/pyproject.toml" 2>/dev/null; then
+        log_info "Coverage configuration: configured in pyproject.toml"
+    elif [ -f "$project_dir/setup.cfg" ] && grep -q "\[coverage:" "$project_dir/setup.cfg" 2>/dev/null; then
+        log_info "Coverage configuration: configured in setup.cfg"
+    fi
+
+    if [ -z "$testing_framework" ]; then
+        log_info "Testing framework: Not detected"
+    fi
+
+    return 0
+}
+
+# ----------------------------------------
+# Function 3b: Detect framework-specific patterns
+# ----------------------------------------
+detect_framework_patterns() {
+    local project_dir="${1:-.}"
+    local framework="$2"
+
+    case "$framework" in
+        "Django")
+            log_subsection "Django-specific patterns:"
+
+            # Check for Django structure
+            if [ -f "$project_dir/settings.py" ] || find "$project_dir" -name "settings.py" -type f 2>/dev/null | head -1 | grep -q .; then
+                log_info "  - settings.py configuration found"
+            fi
+
+            if [ -f "$project_dir/urls.py" ] || find "$project_dir" -name "urls.py" -type f 2>/dev/null | head -1 | grep -q .; then
+                log_info "  - urls.py routing found"
+            fi
+
+            if find "$project_dir" -name "models.py" -type f 2>/dev/null | head -1 | grep -q .; then
+                log_info "  - models.py database models found"
+            fi
+
+            if find "$project_dir" -name "views.py" -type f 2>/dev/null | head -1 | grep -q .; then
+                log_info "  - views.py found"
+            fi
+
+            if find "$project_dir" -name "admin.py" -type f 2>/dev/null | head -1 | grep -q .; then
+                log_info "  - admin.py Django admin found"
+            fi
+
+            if [ -d "$project_dir/templates" ]; then
+                log_info "  - templates directory found"
+            fi
+
+            if [ -d "$project_dir/static" ]; then
+                log_info "  - static files directory found"
+            fi
+            ;;
+
+        "Flask")
+            log_subsection "Flask-specific patterns:"
+
+            # Check for Flask app factory pattern
+            if find "$project_dir" -name "*.py" -exec grep -l "def create_app" {} \; 2>/dev/null | head -1 | grep -q .; then
+                log_info "  - App factory pattern detected"
+            fi
+
+            # Check for blueprints
+            if find "$project_dir" -name "*.py" -exec grep -l "Blueprint\|from flask import.*Blueprint" {} \; 2>/dev/null | head -1 | grep -q .; then
+                log_info "  - Flask blueprints detected"
+            fi
+
+            # Check for Flask extensions
+            if find "$project_dir" -name "*.py" -exec grep -l "flask_sqlalchemy\|flask_migrate\|flask_login" {} \; 2>/dev/null | head -1 | grep -q .; then
+                log_info "  - Flask extensions detected"
+            fi
+
+            if [ -d "$project_dir/templates" ]; then
+                log_info "  - templates directory found"
+            fi
+
+            if [ -d "$project_dir/static" ]; then
+                log_info "  - static files directory found"
+            fi
+            ;;
+
+        "FastAPI")
+            log_subsection "FastAPI-specific patterns:"
+
+            # Check for routers
+            if find "$project_dir" -name "*.py" -exec grep -l "APIRouter\|from fastapi import.*APIRouter" {} \; 2>/dev/null | head -1 | grep -q .; then
+                log_info "  - FastAPI routers detected"
+            fi
+
+            # Check for Pydantic schemas
+            if find "$project_dir" -name "*.py" -exec grep -l "BaseModel\|from pydantic import.*BaseModel" {} \; 2>/dev/null | head -1 | grep -q .; then
+                log_info "  - Pydantic schemas detected"
+            fi
+
+            # Check for dependency injection
+            if find "$project_dir" -name "*.py" -exec grep -l "Depends\|from fastapi import.*Depends" {} \; 2>/dev/null | head -1 | grep -q .; then
+                log_info "  - Dependency injection patterns detected"
+            fi
+
+            # Check for async patterns
+            if find "$project_dir" -name "*.py" -exec grep -l "async def" {} \; 2>/dev/null | head -1 | grep -q .; then
+                log_info "  - Async/await patterns detected"
+            fi
+
+            if [ -d "$project_dir/routers" ]; then
+                log_info "  - routers directory found"
+            fi
+
+            if [ -d "$project_dir/schemas" ]; then
+                log_info "  - schemas directory found"
+            fi
+            ;;
+    esac
+
+    return 0
+}
+
+# ----------------------------------------
 # Function 3: Identify Python project type
 # ----------------------------------------
 identify_python_project_type() {
@@ -84,38 +237,38 @@ identify_python_project_type() {
 
     log_section "Python Project Type Analysis"
 
+    # Framework variable can be used for future enhancements
+    # local framework_detected=""
+
     # Check for Django project
     if [ -f "$project_dir/manage.py" ] && grep -q "django" "$project_dir/manage.py" 2>/dev/null; then
         log_info "Project type: Django Application"
-        return 0
-    fi
-
+        # framework_detected="Django"
+        detect_framework_patterns "$project_dir" "Django"
     # Check for Flask patterns
-    if find "$project_dir" -type f -name "*.py" -exec grep -l "from flask import\|import flask" {} \; 2>/dev/null | head -1 | grep -q .; then
+    elif find "$project_dir" -type f -name "*.py" -exec grep -l "from flask import\|import flask" {} \; 2>/dev/null | head -1 | grep -q .; then
         log_info "Project type: Flask Application"
-        return 0
-    fi
-
+        # framework_detected="Flask"
+        detect_framework_patterns "$project_dir" "Flask"
     # Check for FastAPI patterns
-    if find "$project_dir" -type f -name "*.py" -exec grep -l "from fastapi import\|import fastapi" {} \; 2>/dev/null | head -1 | grep -q .; then
+    elif find "$project_dir" -type f -name "*.py" -exec grep -l "from fastapi import\|import fastapi" {} \; 2>/dev/null | head -1 | grep -q .; then
         log_info "Project type: FastAPI Application"
-        return 0
-    fi
-
+        # framework_detected="FastAPI"
+        detect_framework_patterns "$project_dir" "FastAPI"
     # Check for setup.py (library/package)
-    if [ -f "$project_dir/setup.py" ] || [ -f "$project_dir/pyproject.toml" ]; then
+    elif [ -f "$project_dir/setup.py" ] || [ -f "$project_dir/pyproject.toml" ]; then
         log_info "Project type: Python Library/Package"
-        return 0
-    fi
-
     # Check for __init__.py files (package structure)
-    if find "$project_dir" -type f -name "__init__.py" 2>/dev/null | head -1 | grep -q .; then
+    elif find "$project_dir" -type f -name "__init__.py" 2>/dev/null | head -1 | grep -q .; then
         log_info "Project type: Python Package"
-        return 0
+    else
+        # Default to application
+        log_info "Project type: Python Application"
     fi
 
-    # Default to application
-    log_info "Project type: Python Application"
+    # Detect testing framework regardless of project type
+    detect_testing_framework "$project_dir"
+
     return 0
 }
 
