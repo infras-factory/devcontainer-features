@@ -58,6 +58,9 @@ FUNCTION NAMES:
         bash-section-generator, bsg Test bash section generation
         markdown-builder, md       Test unified PROJECT.md generation
 
+    Task 2.1 - Python Scanner:
+        python-scanner, python     Test Python project structure scanner
+
     Mock Generation:
         mock-generator, mock       Test mock generator interface
         mock-bash                  Test bash project generation
@@ -368,6 +371,49 @@ test_bash_section_generator() {
 }
 
 # shellcheck disable=SC2317  # Will be called when test case is selected
+test_python_scanner() {
+    print_test_start "python-scanner"
+
+    # Source the Python scanner
+    # shellcheck source=/dev/null
+    source "$FEATURE_DIR/utils/layer-1/python-scanner.sh"
+
+    # Source the mock generator
+    # shellcheck source=/dev/null
+    source "$FEATURE_DIR/utils/layer-0/mock-generator.sh"
+
+    echo -e "${BLUE}Testing Python project structure scanning...${NC}" >&2
+
+    # Test Flask project scanning
+    echo -e "\n${CYAN}Testing Flask project scan:${NC}" >&2
+    local mock_flask_dir="$TEST_TMP_DIR/mock-flask"
+    generate_mock_project "python" "flask" "$mock_flask_dir"
+    scan_python_project "$mock_flask_dir"
+
+    # Test FastAPI project scanning
+    echo -e "\n${CYAN}Testing FastAPI project scan:${NC}" >&2
+    local mock_fastapi_dir="$TEST_TMP_DIR/mock-fastapi"
+    generate_mock_project "python" "fastapi" "$mock_fastapi_dir"
+    scan_python_project "$mock_fastapi_dir"
+
+    # Test Django project scanning
+    echo -e "\n${CYAN}Testing Django project scan:${NC}" >&2
+    local mock_django_dir="$TEST_TMP_DIR/mock-django"
+    generate_mock_project "python" "django" "$mock_django_dir"
+    scan_python_project "$mock_django_dir"
+
+    # Test individual scanner functions
+    echo -e "\n${CYAN}Testing individual scanner functions:${NC}" >&2
+    detect_python_files "$mock_flask_dir"
+    find_python_entry_points "$mock_flask_dir"
+    identify_python_project_type "$mock_flask_dir"
+    parse_python_dependencies "$mock_flask_dir"
+    list_python_packages "$mock_flask_dir"
+    analyze_python_version "$mock_flask_dir"
+
+    print_success "Python scanner test completed"
+}
+
 test_markdown_builder() {
     print_test_start "markdown-builder"
 
@@ -669,6 +715,9 @@ main() {
             ;;
         bash-section-generator|bsg)
             test_bash_section_generator
+            ;;
+        python-scanner|python)
+            test_python_scanner
             ;;
         markdown-builder|md)
             test_markdown_builder
