@@ -78,9 +78,70 @@ log_error() {
     echo -e "${RED}💥 $1${NC}" >&2
 }
 
+log_debug() {
+    if [ "${DEBUG:-}" = "true" ]; then
+        echo -e "${BLUE}🔍 $1${NC}" >&2
+    fi
+}
+
 log_step() {
     local step="$1"
     local total="$2"
     local message="$3"
     echo -e "${BOLD}${BLUE}[$step/$total]${NC} ${CYAN}$message${NC}"
+}
+
+# ----------------------------------------
+# Workflow logging functions for better process tracking
+# ----------------------------------------
+
+log_workflow_start() {
+    local workflow_name="$1"
+    echo -e "\n${BOLD}${PURPLE}▶ Starting: ${workflow_name}${NC}" >&2
+}
+
+log_workflow_step() {
+    local step_name="$1"
+    echo -e "${BLUE}  ├─ ${step_name}${NC}" >&2
+}
+
+log_workflow_substep() {
+    local substep_name="$1"
+    echo -e "${CYAN}  │  └─ ${substep_name}${NC}" >&2
+}
+
+log_workflow_end() {
+    local workflow_name="$1"
+    local status="${2:-success}"
+    if [ "$status" = "success" ]; then
+        echo -e "${BOLD}${GREEN}▶ Completed: ${workflow_name}${NC}" >&2
+    else
+        echo -e "${BOLD}${RED}▶ Failed: ${workflow_name}${NC}" >&2
+    fi
+}
+
+log_file_operation() {
+    local operation="$1"
+    local file_path="$2"
+    echo -e "${YELLOW}📄 ${operation}: ${file_path}${NC}" >&2
+}
+
+log_processing() {
+    local item="$1"
+    local context="${2:-}"
+    if [ -n "$context" ]; then
+        echo -e "${CYAN}⚙️  Processing ${item} (${context})${NC}" >&2
+    else
+        echo -e "${CYAN}⚙️  Processing ${item}${NC}" >&2
+    fi
+}
+
+log_result() {
+    local result="$1"
+    echo -e "${GREEN}✓ ${result}${NC}" >&2
+}
+
+log_skip() {
+    local reason="$1"
+    echo -e "${YELLOW}⏭️  Skipped: ${reason}${NC}" >&2
 }

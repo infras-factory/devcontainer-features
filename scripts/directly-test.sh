@@ -53,6 +53,11 @@ FUNCTION NAMES:
         bash-analyzer, analyze     Test bash analyzer
         devcontainer-analyzer, dc  Test DevContainer feature analyzer
 
+    Task 1.3 - PROJECT.md Builder:
+        project-detector, detect   Test multi-technology project detection
+        bash-section-generator, bsg Test bash section generation
+        markdown-builder, md       Test unified PROJECT.md generation
+
     Mock Generation:
         mock-generator, mock       Test mock generator interface
         mock-bash                  Test bash project generation
@@ -257,6 +262,161 @@ test_devcontainer_analyzer() {
     head -20 "$summary_file"
 
     print_success "DevContainer analyzer test completed"
+}
+
+# shellcheck disable=SC2317  # Will be called when test case is selected
+test_project_detector() {
+    print_test_start "project-detector"
+
+    # Source the project detector
+    # shellcheck source=/dev/null
+    source "$FEATURE_DIR/utils/layer-0/project-detector.sh"
+
+    # Source the mock generator to create test projects
+    # shellcheck source=/dev/null
+    source "$FEATURE_DIR/utils/layer-0/mock-generator.sh"
+
+    echo -e "${BLUE}Testing project technology detection...${NC}" >&2
+
+    # Test bash project detection
+    echo -e "\n${CYAN}Testing Bash project detection:${NC}" >&2
+    local mock_bash_dir="$TEST_TMP_DIR/mock-bash"
+    generate_mock_project "bash" "devcontainer" "$mock_bash_dir"
+    detect_project_technologies "$mock_bash_dir"
+    echo -e "Detected: $DETECTED_TECHNOLOGIES (Type: $BASH_PROJECT_TYPE)"
+
+    # Test Python project detection
+    echo -e "\n${CYAN}Testing Python project detection:${NC}" >&2
+    local mock_python_dir="$TEST_TMP_DIR/mock-python"
+    generate_mock_project "python" "flask" "$mock_python_dir"
+    detect_project_technologies "$mock_python_dir"
+    echo -e "Detected: $DETECTED_TECHNOLOGIES (Type: $PYTHON_PROJECT_TYPE)"
+
+    # Test Node.js project detection
+    echo -e "\n${CYAN}Testing Node.js project detection:${NC}" >&2
+    local mock_nodejs_dir="$TEST_TMP_DIR/mock-nodejs"
+    generate_mock_project "nodejs" "express" "$mock_nodejs_dir"
+    detect_project_technologies "$mock_nodejs_dir"
+    echo -e "Detected: $DETECTED_TECHNOLOGIES (Type: $NODEJS_PROJECT_TYPE)"
+
+    # Test combo project detection (multi-technology)
+    echo -e "\n${CYAN}Testing Multi-technology project detection:${NC}" >&2
+    local mock_combo_dir="$TEST_TMP_DIR/mock-combo"
+    generate_mock_project "combo" "all-tech" "$mock_combo_dir"
+    detect_project_technologies "$mock_combo_dir"
+    echo -e "Detected: $DETECTED_TECHNOLOGIES (Architecture: $PROJECT_ARCHITECTURE)"
+
+    # Test project name detection
+    echo -e "\n${CYAN}Testing project name detection:${NC}" >&2
+    local detected_name
+    detected_name=$(detect_project_name "$mock_python_dir")
+    echo -e "Project name from Python mock: $detected_name"
+
+    # Test current project (riso-bootstrap)
+    echo -e "\n${CYAN}Testing current project detection:${NC}" >&2
+    detect_project_technologies "$FEATURE_DIR"
+    generate_technology_summary "$FEATURE_DIR"
+
+    print_success "Project detector test completed"
+}
+
+# shellcheck disable=SC2317  # Will be called when test case is selected
+test_bash_section_generator() {
+    print_test_start "bash-section-generator"
+
+    # Source the bash section generator
+    # shellcheck source=/dev/null
+    source "$FEATURE_DIR/utils/layer-2/bash-section-generator.sh"
+
+    # Source the mock generator and project detector
+    # shellcheck source=/dev/null
+    source "$FEATURE_DIR/utils/layer-0/mock-generator.sh"
+    # shellcheck source=/dev/null
+    source "$FEATURE_DIR/utils/layer-0/project-detector.sh"
+
+    echo -e "${BLUE}Testing bash section generation...${NC}" >&2
+
+    # Test DevContainer feature section
+    echo -e "\n${CYAN}Testing DevContainer feature section:${NC}" >&2
+    local mock_feature_dir="$TEST_TMP_DIR/mock-feature"
+    generate_mock_project "bash" "devcontainer" "$mock_feature_dir"
+
+    # Detect technologies to set up environment
+    detect_project_technologies "$mock_feature_dir"
+
+    local section_file="$TEST_TMP_DIR/bash-section.md"
+    generate_bash_section "$mock_feature_dir" "$section_file"
+
+    echo -e "\n${CYAN}Generated section preview:${NC}" >&2
+    head -30 "$section_file"
+
+    # Test general bash scripts section
+    echo -e "\n${CYAN}Testing general bash scripts section:${NC}" >&2
+    local mock_scripts_dir="$TEST_TMP_DIR/mock-scripts"
+    generate_mock_project "bash" "scripts" "$mock_scripts_dir"
+
+    # Detect technologies to set up environment
+    detect_project_technologies "$mock_scripts_dir"
+
+    local scripts_section_file="$TEST_TMP_DIR/scripts-section.md"
+    generate_bash_section "$mock_scripts_dir" "$scripts_section_file"
+
+    echo -e "\n${CYAN}Generated scripts section preview:${NC}" >&2
+    head -20 "$scripts_section_file"
+
+    print_success "Bash section generator test completed"
+}
+
+# shellcheck disable=SC2317  # Will be called when test case is selected
+test_markdown_builder() {
+    print_test_start "markdown-builder"
+
+    # Source the markdown builder
+    # shellcheck source=/dev/null
+    source "$FEATURE_DIR/utils/layer-3/markdown-builder.sh"
+
+    # Source the mock generator
+    # shellcheck source=/dev/null
+    source "$FEATURE_DIR/utils/layer-0/mock-generator.sh"
+
+    echo -e "${BLUE}Testing PROJECT.md generation...${NC}" >&2
+
+    # Test single-technology project (bash DevContainer feature)
+    echo -e "\n${CYAN}Testing single-tech project (DevContainer feature):${NC}" >&2
+    local mock_feature_dir="$TEST_TMP_DIR/mock-feature"
+    generate_mock_project "bash" "devcontainer" "$mock_feature_dir"
+
+    local project_md="$TEST_TMP_DIR/PROJECT-single.md"
+    generate_project_markdown "$mock_feature_dir" "$project_md" "true"
+
+    echo -e "\n${CYAN}Generated PROJECT.md preview:${NC}" >&2
+    head -40 "$project_md"
+
+    # Test multi-technology project
+    echo -e "\n${CYAN}Testing multi-tech project:${NC}" >&2
+    local mock_combo_dir="$TEST_TMP_DIR/mock-combo"
+    generate_mock_project "combo" "all-tech" "$mock_combo_dir"
+
+    local combo_project_md="$TEST_TMP_DIR/PROJECT-combo.md"
+    generate_project_markdown "$mock_combo_dir" "$combo_project_md" "true"
+
+    echo -e "\n${CYAN}Generated multi-tech PROJECT.md preview:${NC}" >&2
+    head -40 "$combo_project_md"
+
+    # Test on current project (riso-bootstrap)
+    echo -e "\n${CYAN}Testing current project generation:${NC}" >&2
+    local current_project_md="$TEST_TMP_DIR/PROJECT-current.md"
+    generate_project_markdown "$FEATURE_DIR" "$current_project_md" "true"
+
+    echo -e "\n${CYAN}Current project documentation preview:${NC}" >&2
+    head -30 "$current_project_md"
+
+    echo -e "\n${CYAN}Full generated file sizes:${NC}" >&2
+    echo -e "Single-tech: $(wc -l < "$project_md") lines"
+    echo -e "Multi-tech: $(wc -l < "$combo_project_md") lines"
+    echo -e "Current: $(wc -l < "$current_project_md") lines"
+
+    print_success "Markdown builder test completed"
 }
 
 # ========================================
@@ -503,6 +663,15 @@ main() {
             ;;
         devcontainer-analyzer|dc)
             test_devcontainer_analyzer
+            ;;
+        project-detector|detect)
+            test_project_detector
+            ;;
+        bash-section-generator|bsg)
+            test_bash_section_generator
+            ;;
+        markdown-builder|md)
+            test_markdown_builder
             ;;
         mock-generator|mock)
             test_mock_generator
