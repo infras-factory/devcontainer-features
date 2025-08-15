@@ -15,7 +15,12 @@ IMPORT_FILES=(
 )
 # Calculate total steps dynamically
 TOTAL_STEPS=3  # Base steps: update_libs, setup_claude, setup_shell
-[ "$ENABLE_SERENA" = "true" ] && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+BASE_STEPS=("update_latest_libs" "setup_claude" "setup_enhanced_shell")
+# Optionally add conditional steps
+if [ "$ENABLE_SERENA" = "true" ]; then
+    BASE_STEPS+=("setup_serena")
+fi
+TOTAL_STEPS=${#BASE_STEPS[@]}
 
 # ----------------------------------------
 # Local Helper Functions
