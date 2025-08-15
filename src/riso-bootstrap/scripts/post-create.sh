@@ -13,7 +13,9 @@ IMPORT_FILES=(
     "$FEATURE_TMP_DIR/utils/layer-0/package-manager.sh:Package manager utilities"
     "$FEATURE_TMP_DIR/riso-bootstrap-options.env:Feature options"
 )
-TOTAL_STEPS=4
+# Calculate total steps dynamically
+TOTAL_STEPS=3  # Base steps: update_libs, setup_claude, setup_shell
+[ "$ENABLE_SERENA" = "true" ] && TOTAL_STEPS=$((TOTAL_STEPS + 1))
 
 # ----------------------------------------
 # Local Helper Functions
@@ -311,15 +313,18 @@ main() {
         PROJECT_NAME=$(basename "$(pwd)")
     fi
 
-    update_latest_libs 1
-    setup_claude 2
-    setup_enhanced_shell 3
+    local current_step=0
 
-    # Setup Serena if enabled
+    # Base steps (always run)
+    update_latest_libs $((++current_step))
+    setup_claude $((++current_step))
+    setup_enhanced_shell $((++current_step))
+
+    # Optional: Setup Serena if enabled
     if [ "$ENABLE_SERENA" = "true" ]; then
-        setup_serena 4
+        setup_serena $((++current_step))
     else
-        log_section "Skipped: 4/$TOTAL_STEPS Serena setup (not enabled)"
+        log_section "Skipped: Serena setup (not enabled)"
     fi
 }
 
