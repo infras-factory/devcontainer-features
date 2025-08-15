@@ -1,7 +1,7 @@
 {
   "name": "Riso Bootstrap",
   "id": "riso-bootstrap",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Project initialization with basic setup",
   "options": {
     "projectName": {
@@ -17,7 +17,11 @@
     "shellEnhancementLevel": {
       "type": "string",
       "default": "standard",
-      "enum": ["minimal", "standard", "poweruser"],
+      "enum": [
+        "minimal",
+        "standard",
+        "poweruser"
+      ],
       "description": "Shell enhancement level - minimal: essential plugins only, standard: balanced features (recommended), poweruser: all features (may impact performance)"
     },
     "isTestMode": {
