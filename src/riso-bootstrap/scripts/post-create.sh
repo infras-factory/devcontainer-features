@@ -17,7 +17,14 @@ IMPORT_FILES=(
     "$FEATURE_TMP_DIR/utils/layer-3/markdown-builder.sh:PROJECT.md builder"
     "$FEATURE_TMP_DIR/riso-bootstrap-options.env:Feature configuration"
 )
-TOTAL_STEPS=4
+# Calculate total steps dynamically
+TOTAL_STEPS=3  # Base steps: update_libs, setup_claude, setup_shell
+BASE_STEPS=("update_latest_libs" "setup_claude" "setup_enhanced_shell")
+# Optionally add conditional steps
+if [ "$ENABLE_SERENA" = "true" ]; then
+    BASE_STEPS+=("setup_serena")
+fi
+TOTAL_STEPS=${#BASE_STEPS[@]}
 
 # ----------------------------------------
 # Local Helper Functions
@@ -381,15 +388,18 @@ main() {
         PROJECT_NAME=$(basename "$(pwd)")
     fi
 
-    update_latest_libs 1
-    setup_claude 2
-    setup_enhanced_shell 3
+    local current_step=0
 
-    # Setup Serena if enabled
+    # Base steps (always run)
+    update_latest_libs $((++current_step))
+    setup_claude $((++current_step))
+    setup_enhanced_shell $((++current_step))
+
+    # Optional: Setup Serena if enabled
     if [ "$ENABLE_SERENA" = "true" ]; then
-        setup_serena 4
+        setup_serena $((++current_step))
     else
-        log_section "Skipped: 4/$TOTAL_STEPS Serena setup (not enabled)"
+        log_section "Skipped: Serena setup (not enabled)"
     fi
 
     # Generate mock projects if in test mode
