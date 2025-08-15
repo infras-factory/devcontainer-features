@@ -120,6 +120,53 @@ identify_python_project_type() {
 }
 
 # ----------------------------------------
+# Function 4a: Categorize Python dependency by type
+# ----------------------------------------
+categorize_dependency() {
+    local dep_name="$1"
+
+    # Extract package name without version specifiers
+    local package_name
+    package_name=$(echo "$dep_name" | sed 's/[<>=!].*//' | sed 's/\[.*//')
+
+    # Core/Framework dependencies
+    case "$package_name" in
+        django|Django|flask|Flask|fastapi|FastAPI|tornado|pyramid|bottle|starlette|sanic)
+            echo "Core/Framework"
+            return 0
+            ;;
+    esac
+
+    # Database/ORM dependencies
+    case "$package_name" in
+        sqlalchemy|SQLAlchemy|psycopg2|psycopg2-binary|pymongo|PyMongo|redis|mysql-connector-python|mysqlclient|PyMySQL|peewee|tortoise-orm|asyncpg|elasticsearch)
+            echo "Database/ORM"
+            return 0
+            ;;
+    esac
+
+    # Testing tools
+    case "$package_name" in
+        pytest|pytest-cov|pytest-flask|pytest-django|unittest2|nose|nose2|coverage|mock|tox|factory-boy|hypothesis|faker|httpx|requests-mock)
+            echo "Testing"
+            return 0
+            ;;
+    esac
+
+    # Development tools
+    case "$package_name" in
+        mypy|mypy-extensions|black|Black|flake8|pyflakes|pycodestyle|isort|autopep8|pylint|bandit|pre-commit|sphinx|mkdocs|jupyter|ipython|pydantic|marshmallow)
+            echo "Development"
+            return 0
+            ;;
+    esac
+
+    # Default to Other if not categorized
+    echo "Other"
+    return 0
+}
+
+# ----------------------------------------
 # Function 4: Parse Python dependency files
 # ----------------------------------------
 parse_python_dependencies() {
@@ -130,15 +177,89 @@ parse_python_dependencies() {
     # Check requirements.txt
     if [ -f "$project_dir/requirements.txt" ]; then
         log_info "Found requirements.txt"
-        local req_count
-        req_count=$(grep -c "^[^#]" "$project_dir/requirements.txt" 2>/dev/null || echo "0")
-        log_info "Dependencies in requirements.txt: $req_count"
 
-        # Show top dependencies
-        if [ "$req_count" -gt 0 ]; then
-            log_subsection "Key dependencies:"
-            head -5 "$project_dir/requirements.txt" | grep -v "^#" | while read -r dep; do
-                [ -n "$dep" ] && log_info "  - $dep"
+        # Initialize category counters
+        local core_count=0
+        local db_count=0
+        local testing_count=0
+        local dev_count=0
+        local other_count=0
+
+        # Arrays to store dependencies by category
+        declare -a core_deps=()
+        declare -a db_deps=()
+        declare -a testing_deps=()
+        declare -a dev_deps=()
+        declare -a other_deps=()
+
+        while IFS= read -r line; do
+            # Skip comments and empty lines
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+
+            local category
+            category=$(categorize_dependency "$line")
+
+            case "$category" in
+                "Core/Framework")
+                    core_deps+=("$line")
+                    ((core_count++))
+                    ;;
+                "Database/ORM")
+                    db_deps+=("$line")
+                    ((db_count++))
+                    ;;
+                "Testing")
+                    testing_deps+=("$line")
+                    ((testing_count++))
+                    ;;
+                "Development")
+                    dev_deps+=("$line")
+                    ((dev_count++))
+                    ;;
+                *)
+                    other_deps+=("$line")
+                    ((other_count++))
+                    ;;
+            esac
+        done < "$project_dir/requirements.txt"
+
+        # Display categorized dependencies
+        local total_count=$((core_count + db_count + testing_count + dev_count + other_count))
+        log_info "Total dependencies: $total_count"
+
+        if [ "$core_count" -gt 0 ]; then
+            log_subsection "Core/Framework dependencies: $core_count"
+            for dep in "${core_deps[@]}"; do
+                log_info "  - $dep"
+            done
+        fi
+
+        if [ "$db_count" -gt 0 ]; then
+            log_subsection "Database/ORM dependencies: $db_count"
+            for dep in "${db_deps[@]}"; do
+                log_info "  - $dep"
+            done
+        fi
+
+        if [ "$testing_count" -gt 0 ]; then
+            log_subsection "Testing dependencies: $testing_count"
+            for dep in "${testing_deps[@]}"; do
+                log_info "  - $dep"
+            done
+        fi
+
+        if [ "$dev_count" -gt 0 ]; then
+            log_subsection "Development dependencies: $dev_count"
+            for dep in "${dev_deps[@]}"; do
+                log_info "  - $dep"
+            done
+        fi
+
+        if [ "$other_count" -gt 0 ]; then
+            log_subsection "Other dependencies: $other_count"
+            for dep in "${other_deps[@]}"; do
+                log_info "  - $dep"
             done
         fi
     fi
