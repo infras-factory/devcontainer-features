@@ -18,6 +18,8 @@ source "${LAYER_ZERO_DIR}/logger.sh"
 source "${LAYER_ZERO_DIR}/project-detector.sh"
 # shellcheck source=../layer-2/bash-section-generator.sh disable=SC1091
 source "${LAYER_TWO_DIR}/bash-section-generator.sh"
+# shellcheck source=../layer-2/python-section-generator.sh disable=SC1091
+source "${LAYER_TWO_DIR}/python-section-generator.sh"
 
 # ----------------------------------------
 # utils/layer-2/markdown-builder.sh - Central PROJECT.md generator
@@ -204,34 +206,25 @@ generate_bash_technology_section() {
 }
 
 # ----------------------------------------
-# Function 7: Generate python technology section (placeholder)
+# Function 7: Generate python technology section
 # ----------------------------------------
 generate_python_technology_section() {
     local project_path="$1"
     local output_file="$2"
 
-    cat >> "$output_file" << EOF
+    log_workflow_substep "Generating Python section"
 
-## 🐍 Python Application
+    # Generate Python section content and append to output file
+    local python_section
+    python_section=$(generate_python_section "$project_path")
 
-### Overview
-This project contains Python code for ${PYTHON_PROJECT_TYPE} development.
-
-### Python Project Type
-**Type:** $PYTHON_PROJECT_TYPE
-
-### Installation
-\`\`\`bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the application
-python main.py
-\`\`\`
-
-EOF
-
-    log_debug "Python section generated (placeholder)"
+    if [ -n "$python_section" ]; then
+        echo -e "\n## 🐍 Python Technology\n" >> "$output_file"
+        echo -e "$python_section" >> "$output_file"
+        log_result "Python section added to PROJECT.md"
+    else
+        log_warning "Failed to generate Python section"
+    fi
 }
 
 # ----------------------------------------

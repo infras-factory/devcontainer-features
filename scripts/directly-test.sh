@@ -616,6 +616,114 @@ test_mock_template_projects() {
 }
 
 # shellcheck disable=SC2317  # Will be called when test case is selected
+test_python_section_generator() {
+    print_test_start "python-section-generator"
+
+    # Source the python-section-generator
+    # shellcheck source=/dev/null
+    source "$FEATURE_DIR/utils/layer-2/python-section-generator.sh"
+
+    # Create a mock Python project
+    local test_project="$TEST_TMP_DIR/python-project"
+    mkdir -p "$test_project"
+
+    # Create Python files
+    cat > "$test_project/app.py" << 'EOF'
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route('/')
+def hello():
+    return "Hello World"
+EOF
+
+    cat > "$test_project/main.py" << 'EOF'
+from app import app
+
+if __name__ == "__main__":
+    app.run()
+EOF
+
+    # Create requirements.txt
+    cat > "$test_project/requirements.txt" << 'EOF'
+Flask==2.3.3
+SQLAlchemy==2.0.0
+pytest==7.4.0
+black==23.7.0
+requests==2.31.0
+EOF
+
+    # Create package structure
+    mkdir -p "$test_project/myapp"
+    touch "$test_project/myapp/__init__.py"
+
+    mkdir -p "$test_project/tests"
+    cat > "$test_project/tests/test_app.py" << 'EOF'
+import pytest
+from app import app
+
+def test_app():
+    assert app is not None
+EOF
+
+    # Create .python-version
+    echo "3.11.4" > "$test_project/.python-version"
+
+    # Create PROJECT.md
+    mkdir -p "$test_project/.context"
+    cat > "$test_project/.context/PROJECT.md" << 'EOF'
+# Project: Test Python Project
+
+## Overview
+- **Primary Type**: Python Application
+- **Technologies**: Python, Flask
+
+## Technologies Detected
+
+### Bash Scripts
+Some bash content here
+
+## Project Structure
+Project files here
+EOF
+
+    # Generate Python section
+    echo -e "\n${CYAN}Generating Python section...${NC}" >&2
+    local section
+    section=$(generate_python_section "$test_project")
+
+    if [ -n "$section" ]; then
+        echo -e "${GREEN}✓${NC} Python section generated" >&2
+        echo "$section" | head -20
+    else
+        echo -e "${RED}✗${NC} Failed to generate Python section" >&2
+        return 1
+    fi
+
+    # Test adding to PROJECT.md
+    echo -e "\n${CYAN}Adding Python section to PROJECT.md...${NC}" >&2
+    if add_python_section_to_project_md "$test_project"; then
+        echo -e "${GREEN}✓${NC} Python section added to PROJECT.md" >&2
+
+        # Verify the section was added
+        if grep -q "### Python Application" "$test_project/.context/PROJECT.md"; then
+            echo -e "${GREEN}✓${NC} Python section found in PROJECT.md" >&2
+            echo -e "\n${CYAN}PROJECT.md content (first 50 lines):${NC}" >&2
+            head -50 "$test_project/.context/PROJECT.md"
+        else
+            echo -e "${RED}✗${NC} Python section not found in PROJECT.md" >&2
+            return 1
+        fi
+    else
+        echo -e "${RED}✗${NC} Failed to add Python section to PROJECT.md" >&2
+        return 1
+    fi
+
+    print_success "Python section generator test completed"
+}
+
+# shellcheck disable=SC2317  # Will be called when test case is selected
 test_mock_combo_projects() {
     print_test_start "mock combo projects"
 
@@ -718,6 +826,9 @@ main() {
             ;;
         python-scanner|python)
             test_python_scanner
+            ;;
+        python-section-generator|psg)
+            test_python_section_generator
             ;;
         markdown-builder|md)
             test_markdown_builder
