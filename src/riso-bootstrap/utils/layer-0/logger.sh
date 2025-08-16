@@ -27,9 +27,9 @@ log_phase() {
     local separator
     separator=$(printf '%*s' "$total_width" '' | tr ' ' '=')
 
-    echo -e "\n${BOLD}${PURPLE}${separator}${NC}"
-    echo -e "${BOLD}${PURPLE}     ${phase_message}${NC}"
-    echo -e "${BOLD}${PURPLE}${separator}${NC}"
+    echo -e "\n${BOLD}${PURPLE}${separator}${NC}" >&2
+    echo -e "${BOLD}${PURPLE}     ${phase_message}${NC}" >&2
+    echo -e "${BOLD}${PURPLE}${separator}${NC}" >&2
 }
 
 display_bold_message() {
@@ -38,28 +38,28 @@ display_bold_message() {
     local total_width=$((message_length + 10))  # Add padding like log_phase
     local separator
     separator=$(printf '%*s' "$total_width" '' | tr ' ' '=')
-    echo -e "${GREEN}${separator}${NC}"
-    echo -e "${GREEN}${BOLD}     ${message}${NC}"
-    echo -e "${GREEN}${separator}${NC}"
+    echo -e "${GREEN}${separator}${NC}" >&2
+    echo -e "${GREEN}${BOLD}     ${message}${NC}" >&2
+    echo -e "${GREEN}${separator}${NC}" >&2
 }
 
 log_section() {
     local section_message="$1"
-    echo -e "${CYAN}${section_message}${NC}"
+    echo -e "${CYAN}${section_message}${NC}" >&2
 }
 
 log_subsection() {
     local subsection_message="$1"
-    echo ""
-    echo -e "${BOLD}${CYAN}  ${subsection_message}${NC}"
+    echo "" >&2
+    echo -e "${BOLD}${CYAN}  ${subsection_message}${NC}" >&2
 }
 
 log_section_info() {
-    echo -e "${WHITE}    $1${NC}"
+    echo -e "${WHITE}    $1${NC}" >&2
 }
 
 log_header() {
-    echo -e "\n${BOLD}${BLUE}🎯 $1${NC}"
+    echo -e "\n${BOLD}${BLUE}🎯 $1${NC}" >&2
 }
 
 log_info() {
@@ -88,7 +88,7 @@ log_step() {
     local step="$1"
     local total="$2"
     local message="$3"
-    echo -e "${BOLD}${BLUE}[$step/$total]${NC} ${CYAN}$message${NC}"
+    echo -e "${BOLD}${BLUE}[$step/$total]${NC} ${CYAN}$message${NC}" >&2
 }
 
 # ----------------------------------------
