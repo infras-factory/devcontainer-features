@@ -51,22 +51,24 @@ import_utility_files IMPORT_FILES
 # ----------------------------------------
 update_latest_libs() {
     local step_id=$1
-    log_section "Executing: $step_id/$TOTAL_STEPS Updating latest libraries..."
-    # Update command for the latest libraries
+    set_step_context "update_latest_libs"
+
+    log_info "Updating npm to latest version..."
     npm install -g npm@latest
-    log_section "Executing: $step_id/$TOTAL_STEPS Update completed"
+    log_success "npm updated successfully"
 }
 
 # Function to setup Claude CLI tool
 setup_claude() {
     local step_id=$1
+    set_step_context "setup_claude"
 
-    log_section "Executing: $step_id/$TOTAL_STEPS Installing Claude Code..."
+    log_info "Installing Claude Code CLI tool..."
 
     # Install Claude CLI globally with specific version
     npm install -g @anthropic-ai/claude-code@1.0.67
 
-    log_section "Executing: $step_id/$TOTAL_STEPS Installation completed"
+    log_success "Claude Code installed successfully"
     return 0
 }
 
@@ -74,37 +76,43 @@ setup_claude() {
 setup_enhanced_shell() {
     local step_id=$1
     local enhancement_level="${SHELL_ENHANCEMENT_LEVEL:-standard}"
+    set_step_context "setup_enhanced_shell"
 
-    log_section "Executing: $step_id/$TOTAL_STEPS Setting up enhanced shell ($enhancement_level)..."
+    log_info "Setting up enhanced shell (level: $enhancement_level)..."
 
     # Wait for Oh My Zsh to be ready
+    log_group_start "Waiting for Oh My Zsh"
     local max_wait=30
     local wait_count=0
     while [ ! -d "$HOME/.oh-my-zsh" ] && [ $wait_count -lt $max_wait ]; do
-        log_info "Waiting for Oh My Zsh installation..."
+        log_info "Waiting for Oh My Zsh installation... ($wait_count/$max_wait)"
         sleep 1
         wait_count=$((wait_count + 1))
     done
 
     if [ ! -d "$HOME/.oh-my-zsh" ]; then
         log_error "Oh My Zsh not found. Skipping shell enhancements."
+        log_group_end "Waiting for Oh My Zsh"
         return 1
     fi
+    log_success "Oh My Zsh found"
+    log_group_end "Waiting for Oh My Zsh"
 
     # Set ZSH_CUSTOM
     export ZSH_CUSTOM=${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}
 
-    # STEP 1: Install Powerlevel10k (mandatory for all levels)
-    log_subsection "Installing Powerlevel10k theme..."
+    # STEP 1: Install Powerlevel10k
+    log_group_start "Installing Powerlevel10k theme"
     if [ ! -d "$ZSH_CUSTOM/themes/powerlevel10k" ]; then
         git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$ZSH_CUSTOM/themes/powerlevel10k"
         log_success "Powerlevel10k installed"
     else
-        log_info "Powerlevel10k already installed"
+        log_notice "Powerlevel10k already installed"
     fi
+    log_group_end "Installing Powerlevel10k theme"
 
     # STEP 2: Install plugins based on level
-    log_subsection "Installing plugins for $enhancement_level level..."
+    log_group_start "Installing plugins for $enhancement_level level"
 
     # Define plugins for each level
     local plugins_minimal=(
@@ -149,28 +157,32 @@ setup_enhanced_shell() {
                 log_warning "Failed to install $desc"
             fi
         else
-            log_info "$desc already installed"
+            log_notice "$desc already installed"
         fi
     done
+    log_group_end "Installing plugins for $enhancement_level level"
 
     # STEP 3: Configure .zshrc
-    log_subsection "Configuring shell..."
+    log_group_start "Configuring shell"
     configure_enhanced_zshrc "$enhancement_level"
+    log_group_end "Configuring shell"
 
     # STEP 4: Copy Powerlevel10k configuration
-    log_subsection "Setting up Powerlevel10k configuration..."
+    log_group_start "Setting up Powerlevel10k configuration"
     if [ -f "$FEATURE_TMP_DIR/configs/.p10k.zsh" ]; then
         cp "$FEATURE_TMP_DIR/configs/.p10k.zsh" "$HOME/.p10k.zsh"
         log_success "Powerlevel10k configuration copied"
     else
         log_warning "Powerlevel10k config not found, user will need to run 'p10k configure'"
     fi
+    log_group_end "Setting up Powerlevel10k configuration"
 
     # STEP 5: Install dependencies for plugins if needed
     if [ "$enhancement_level" = "poweruser" ]; then
+        log_group_start "Installing plugin dependencies"
         local pkg_manager
         pkg_manager=$(detect_package_manager_cached)
-        log_info "Detected package manager: $pkg_manager"
+        log_debug "Detected package manager: $pkg_manager"
 
         # Install bat for zsh-bat plugin
         if ! command -v bat &> /dev/null && ! command -v batcat &> /dev/null; then
@@ -180,10 +192,13 @@ setup_enhanced_shell() {
             else
                 log_warning "Failed to install bat, zsh-bat plugin may not work properly"
             fi
+        else
+            log_notice "bat already available"
         fi
+        log_group_end "Installing plugin dependencies"
     fi
 
-    log_section "Executing: $step_id/$TOTAL_STEPS Shell enhancement completed"
+    log_success "Shell enhancement completed successfully"
     return 0
 }
 
@@ -272,19 +287,28 @@ EOF
 
 # Function to setup Serena coding agent toolkit
 setup_serena() {
+    # shellcheck disable=SC2034
     local step_id=$1
+    # Note: step_id parameter kept for consistency but not used in new logging style
+    set_step_context "setup_serena"
 
-    log_section "Executing: $step_id/$TOTAL_STEPS Setting up Serena coding agent..."
+    log_info "Setting up Serena coding agent..."
 
     # Install UV if not present
+    log_group_start "Installing UV package manager"
     if ! command -v uv &> /dev/null; then
         log_info "Installing UV package manager..."
         curl -LsSf https://astral.sh/uv/install.sh | sh
         export PATH="$HOME/.local/bin:$PATH"
+        log_success "UV package manager installed"
+    else
+        log_notice "UV package manager already available"
     fi
+    log_group_end "Installing UV package manager"
 
     # Generate mock files if in test mode and no source files exist
     if [ "$IS_TEST_MODE" = "true" ]; then
+        log_group_start "Test mode setup"
         # Check if workspace is empty or has no source files
         if [ -z "$(find . -maxdepth 1 -name '*.py' -o -name '*.js' -o -name '*.ts' -o -name '*.java' 2>/dev/null)" ]; then
             log_info "Test mode: Generating mock Python project for Serena..."
@@ -292,23 +316,37 @@ setup_serena() {
             # shellcheck source=/dev/null
             source "$FEATURE_TMP_DIR/utils/layer-0/mock-generator.sh"
             generate_mock_python_project "."
+            log_success "Mock Python project generated"
+        else
+            log_notice "Source files detected, skipping mock generation"
         fi
+        log_group_end "Test mode setup"
     fi
 
     # Setup Serena for this project
-    log_subsection "Initializing Serena for project..."
+    log_group_start "Initializing Serena"
+    log_info "Generating Serena configuration for project..."
     uvx --from git+https://github.com/oraios/serena serena project generate-yml
+    log_success "Serena configuration generated"
+    log_group_end "Initializing Serena"
 
-    log_subsection "Indexing project for semantic analysis..."
+    log_group_start "Indexing project"
+    log_info "Indexing project for semantic analysis..."
     uvx --from git+https://github.com/oraios/serena serena project index
+    log_success "Project indexed successfully"
+    log_group_end "Indexing project"
 
     # Add Serena MCP server to Claude Code
-    log_subsection "Registering Serena with Claude Code..."
+    log_group_start "Registering with Claude Code"
+    log_info "Registering Serena MCP server with Claude Code..."
     if ! claude mcp add serena "uvx --from git+https://github.com/oraios/serena serena mcp --project $(pwd)"; then
-        log_info "Warning: Failed to register Serena MCP server with Claude Code. This may be expected if already registered. Please check the output above for details."
+        log_warning "Failed to register Serena MCP server with Claude Code. This may be expected if already registered."
+    else
+        log_success "Serena MCP server registered with Claude Code"
     fi
+    log_group_end "Registering with Claude Code"
 
-    log_section "Executing: $step_id/$TOTAL_STEPS Serena setup completed"
+    log_success "Serena setup completed successfully"
     return 0
 }
 
@@ -318,21 +356,40 @@ main() {
         PROJECT_NAME=$(basename "$(pwd)")
     fi
 
+    set_workflow_context "post-create.sh"
+    log_workflow_start "Riso Bootstrap Post-Create Setup"
+
     local current_step=0
 
-    # Base steps (always run)
-    update_latest_libs $((++current_step))
-    setup_claude $((++current_step))
-    setup_enhanced_shell $((++current_step))
+    # Step 1: Update libraries
+    log_step_start "Update latest libraries" $((++current_step)) "$TOTAL_STEPS"
+    log_group_start "Package management"
+    update_latest_libs $current_step
+    log_group_end "Package management"
+    log_step_end "Update latest libraries" "success"
 
-    # Optional: Setup Serena if enabled
+    # Step 2: Setup Claude
+    log_step_start "Install Claude Code" $((++current_step)) "$TOTAL_STEPS"
+    log_group_start "Claude CLI installation"
+    setup_claude $current_step
+    log_group_end "Claude CLI installation"
+    log_step_end "Claude Code installation" "success"
+
+    # Step 3: Setup enhanced shell
+    log_step_start "Setup enhanced shell ($SHELL_ENHANCEMENT_LEVEL)" $((++current_step)) "$TOTAL_STEPS"
+    setup_enhanced_shell $current_step
+    log_step_end "Shell enhancement" "success"
+
+    # Conditional Step: Setup Serena
     if [ "$ENABLE_SERENA" = "true" ]; then
-        setup_serena $((++current_step))
+        log_step_start "Setup Serena coding agent" $((++current_step)) "$TOTAL_STEPS"
+        setup_serena $current_step
+        log_step_end "Serena setup" "success"
     else
-        log_section "Skipped: Serena setup (not enabled)"
+        log_notice "Serena setup skipped (not enabled)"
     fi
-}
 
-log_phase "RISO BOOTSTRAP POST-CREATE SCRIPT EXECUTION"
+    log_workflow_end "Riso Bootstrap Post-Create Setup" "success"
+}
 
 main "$@"

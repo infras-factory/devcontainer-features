@@ -16,6 +16,7 @@ REQUIRED_FILES=(
 # Files to import for install.sh usage (format: "path:description")
 # shellcheck disable=SC2034
 IMPORT_FILES=(
+    "./utils/layer-0/logger.sh:Logger utilities"
     "./utils/layer-1/file-ops.sh:File operation utilities"
 )
 
@@ -94,11 +95,27 @@ EOF
 # install.sh - Installation script for Riso Bootstrap
 # ----------------------------------------
 main() {
-    # Copy feature files to system directory
-    copy_feature_files
+    set_workflow_context "install.sh"
+    log_workflow_start "Riso Bootstrap Installation"
 
-    # Create feature options environment file
+    local total_steps=2
+    local current_step=0
+
+    # Step 1: Copy feature files
+    log_step_start "Copy feature files to system directory" $((++current_step)) $total_steps
+    log_group_start "File operations"
+    copy_feature_files
+    log_group_end "File operations"
+    log_step_end "Copy feature files to system directory" "success"
+
+    # Step 2: Create options file
+    log_step_start "Create feature options environment file" $((++current_step)) $total_steps
+    log_group_start "Configuration setup"
     create_options_file
+    log_group_end "Configuration setup"
+    log_step_end "Create feature options environment file" "success"
+
+    log_workflow_end "Riso Bootstrap Installation" "success"
 }
 
 main "$@"
