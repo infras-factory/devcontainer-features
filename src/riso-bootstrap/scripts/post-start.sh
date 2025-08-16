@@ -14,11 +14,14 @@ REQUIRED_FILES=(
     "$HOME_DIR/.ssh/id_rsa.pub:SSH public key"
     "$HOME_DIR/.ssh/known_hosts:SSH known hosts file"
 )
+# Files to import (format: "path:description")
 # shellcheck disable=SC2034
 IMPORT_FILES=(
     "$FEATURE_TMP_DIR/utils/layer-0/logger.sh:Logger utilities"
     "$FEATURE_TMP_DIR/riso-bootstrap-options.env:Feature options"
 )
+# Total steps for this workflow
+# shellcheck disable=SC2034
 TOTAL_STEPS=1
 
 # ----------------------------------------
@@ -66,23 +69,31 @@ import_utility_files IMPORT_FILES
 # scripts/post-start.sh - Post-start script for Riso Bootstrap
 # ----------------------------------------
 grant_ssh_permissions() {
+    # shellcheck disable=SC2034
     local step_id=$1
-    log_section "Executing: $step_id/$TOTAL_STEPS Grant SSH permission..."
+    # Note: step_id parameter kept for consistency but not used in new logging style
+    set_step_context "grant_ssh_permissions"
+
+    log_info "Granting SSH permissions..."
 
     if [ -d "$HOME_DIR/.ssh" ]; then
         chmod 700 "$HOME_DIR/.ssh"
         find "$HOME_DIR/.ssh" -type f -exec chmod 600 {} \;
+        log_success "SSH permissions granted"
     else
         log_warning "No $HOME_DIR/.ssh directory found"
     fi
-
-    log_section "Executing: $step_id/$TOTAL_STEPS Grant SSH permission completed"
 }
 
 main() {
-    grant_ssh_permissions 1
-}
+    set_workflow_context "post-start.sh"
+    log_workflow_start "Riso Bootstrap Post-Start Setup"
 
-log_phase "RISO BOOTSTRAP POST-START SCRIPT EXECUTION"
+    log_step_start "Grant SSH permissions" 1 1
+    grant_ssh_permissions 1
+    log_step_end "Grant SSH permissions" "success"
+
+    log_workflow_end "Riso Bootstrap Post-Start Setup" "success"
+}
 
 main "$@"

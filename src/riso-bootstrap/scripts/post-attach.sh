@@ -283,7 +283,14 @@ display_feature_status() {
 }
 
 main() {
+    set_workflow_context "post-attach.sh"
+    log_workflow_start "Riso Bootstrap Post-Attach Status"
+
+    log_step_start "Display feature status and welcome message" 1 1
     display_feature_status
+    log_step_end "Status display" "success"
+
+    log_workflow_end "Riso Bootstrap Post-Attach Status" "success"
 }
 
 main "$@"
