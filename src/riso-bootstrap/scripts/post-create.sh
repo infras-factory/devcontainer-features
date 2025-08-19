@@ -306,23 +306,6 @@ setup_serena() {
     fi
     log_group_end "Installing UV package manager"
 
-    # Generate mock files if in test mode and no source files exist
-    if [ "$IS_TEST_MODE" = "true" ]; then
-        log_group_start "Test mode setup"
-        # Check if workspace is empty or has no source files
-        if [ -z "$(find . -maxdepth 1 -name '*.py' -o -name '*.js' -o -name '*.ts' -o -name '*.java' 2>/dev/null)" ]; then
-            log_info "Test mode: Generating mock Python project for Serena..."
-            # Import mock generator only when needed
-            # shellcheck source=/dev/null
-            source "$FEATURE_TMP_DIR/utils/layer-0/mock-generator.sh"
-            generate_mock_python_project "."
-            log_success "Mock Python project generated"
-        else
-            log_notice "Source files detected, skipping mock generation"
-        fi
-        log_group_end "Test mode setup"
-    fi
-
     # Setup Serena for this project
     log_group_start "Initializing Serena"
     log_info "Generating Serena configuration for project..."
@@ -350,10 +333,66 @@ setup_serena() {
     return 0
 }
 
+generate_mock_projects_for_testing() {
+    local test_dir="/tmp/riso-test-projects"
+    export DEBUG="true"
+    # shellcheck source=/dev/null
+    source "$FEATURE_TMP_DIR/utils/layer-0/mock-generator.sh"
+
+    log_group_start "Mock Projects Generation for Testing"
+
+    local current_workspace
+    current_workspace=$(pwd)
+    if [[ "$current_workspace" == /workspaces/* ]]; then
+        log_info "Generating mock projects in root directory"
+        log_info "  • Creating mock Python project in current devcontainer test workspace: $current_workspace"
+        generate_mock_project "python" "flask" "$current_workspace" ""
+    fi
+
+    # Remove existing test directory if it exists
+    if [ -d "$test_dir" ]; then
+        rm -rf "$test_dir"
+        log_info "Cleaned existing test directory"
+    fi
+
+    # Create test directory
+    mkdir -p "$test_dir"
+    log_info "Created test directory: $test_dir"
+
+    # Generate mock projects in test directory
+    log_info "Generating mock projects in test directory"
+    log_info "  • DevContainer Feature project"
+    generate_mock_project "bash" "devcontainer" "$test_dir/devcontainer-feature" ""
+
+    log_info "  • Python Flask project"
+    generate_mock_project "python" "flask" "$test_dir/python-flask" ""
+
+    log_info "  • Node.js Express project"
+    generate_mock_project "nodejs" "express" "$test_dir/nodejs-express" ""
+
+    log_info "  • Multi-tech combo project"
+    generate_mock_project "combo" "all-tech" "$test_dir/combo-project" ""
+
+    log_info "  • Bash Scripts project"
+    generate_mock_project "bash" "scripts" "$test_dir/bash-scripts" ""
+
+    log_info "  • Template project"
+    generate_mock_project "template" "cookiecutter" "$test_dir/template-project" ""
+
+    log_group_end "Mock Projects Generation for Testing"
+}
+
 main() {
     # Auto-detect project name if not provided
     if [ -z "$PROJECT_NAME" ]; then
         PROJECT_NAME=$(basename "$(pwd)")
+    fi
+
+    # Optional: Generate mock projects for testing if in test mode
+    if [ "$IS_TEST_MODE" = "true" ]; then
+        log_step_start "Generate mock projects for testing" 0 0
+        generate_mock_projects_for_testing
+        log_step_end "Mock projects generation" "success"
     fi
 
     set_workflow_context "post-create.sh"

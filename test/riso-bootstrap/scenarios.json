@@ -6,7 +6,8 @@
       "riso-bootstrap": {
         "projectName": "test-project",
         "enableSerena": false,
-        "shellEnhancementLevel": "minimal"
+        "shellEnhancementLevel": "minimal",
+        "isTestMode": true
       }
     }
   },
@@ -17,7 +18,8 @@
       "riso-bootstrap": {
         "projectName": "test-project",
         "enableSerena": false,
-        "shellEnhancementLevel": "standard"
+        "shellEnhancementLevel": "standard",
+        "isTestMode": true
       }
     }
   },
@@ -28,7 +30,8 @@
       "riso-bootstrap": {
         "projectName": "test-project",
         "enableSerena": false,
-        "shellEnhancementLevel": "poweruser"
+        "shellEnhancementLevel": "poweruser",
+        "isTestMode": true
       }
     }
   },

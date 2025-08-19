@@ -34,10 +34,11 @@ check "IS_TEST_MODE is true" bash -c 'source /usr/local/share/riso-bootstrap/ris
 echo -e "\n>>> Testing Mock Files Generation..."
 
 # Check if mock files were created
-check "mock main.py exists" test -f "main.py"
+check "mock app.py exists" test -f "app.py"
+check "mock models.py exists" test -f "models.py"
+check "mock requirements.txt exists" test -f "requirements.txt"
 check "mock README.md exists" test -f "README.md"
-check "mock utils directory exists" test -d "utils"
-check "mock test file exists" test -f "test_main.py"
+check "mock test file exists" test -f "tests/test_api.py"
 
 # ============================================
 # SECTION 4: Serena-specific Tests
