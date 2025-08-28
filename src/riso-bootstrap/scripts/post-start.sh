@@ -20,14 +20,6 @@ IMPORT_FILES=(
     "$FEATURE_TMP_DIR/utils/layer-0/logger.sh:Logger utilities"
     "$FEATURE_TMP_DIR/riso-bootstrap-options.env:Feature options"
 )
-# Calculate total steps dynamically
-TOTAL_STEPS=0
-BASE_STEPS=("grant_ssh_permissions")
-# Optionally add conditional steps
-if [ "$ENABLE_SERENA" = "true" ]; then
-    BASE_STEPS+=("setup_serena_mcp")
-fi
-TOTAL_STEPS=${#BASE_STEPS[@]}
 
 # ----------------------------------------
 # Local Helper Functions
@@ -71,6 +63,16 @@ validate_required_files REQUIRED_FILES
 import_utility_files IMPORT_FILES
 
 # ----------------------------------------
+# Calculate total steps dynamically (AFTER importing options)
+# ----------------------------------------
+BASE_STEPS=("grant_ssh_permissions")
+# Optionally add conditional steps
+if [ "$ENABLE_SERENA" = "true" ]; then
+    BASE_STEPS+=("setup_serena_mcp")
+fi
+TOTAL_STEPS=${#BASE_STEPS[@]}
+
+# ----------------------------------------
 # scripts/post-start.sh - Post-start script for Riso Bootstrap
 # ----------------------------------------
 grant_ssh_permissions() {
@@ -97,8 +99,9 @@ setup_serena_mcp() {
 
     set_step_context "setup_serena_mcp"
 
-    # Ensure UV is in PATH
+    # Ensure UV is in PATH (UV installed in post-create.sh)
     export PATH="$HOME/.local/bin:$PATH"
+    export PATH="$HOME_DIR/.local/bin:$PATH"
 
     # Check if UV is available
     if ! command -v uvx &> /dev/null; then
