@@ -96,16 +96,51 @@ setup_serena_mcp() {
     local step_id=$1
 
     set_step_context "setup_serena_mcp"
-    # Add Serena MCP server to Claude Code
-    log_group_start "Registering with Claude Code"
-    log_info "Registering Serena MCP server with Claude Code..."
-    if ! claude mcp add serena --scope user -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context ide-assistant --project "$(pwd)"; then
-        log_warning "Failed to register Serena MCP server with Claude Code. This may be expected if already registered."
-    else
-        log_success "Serena MCP server registered with Claude Code"
-    fi
-    log_group_end "Registering with Claude Code"
 
+    # Ensure UV is in PATH
+    export PATH="$HOME/.local/bin:$PATH"
+
+    # Check if UV is available
+    if ! command -v uvx &> /dev/null; then
+        log_error "uvx command not found. Please ensure UV is properly installed."
+        return 1
+    fi
+
+    log_group_start "Setting up Serena MCP Server"
+
+    # Check if server is already registered and working
+    if claude mcp list | grep -q "serena.*✓ Connected"; then
+        log_success "Serena MCP server already registered and connected"
+        log_group_end "Setting up Serena MCP Server"
+        return 0
+    fi
+
+    # Remove existing server if it exists but failed to connect
+    if claude mcp list | grep -q "serena.*✗ Failed to connect"; then
+        log_info "Removing failed Serena MCP server registration..."
+        claude mcp remove serena --scope user || true
+        log_info "Failed server registration removed"
+    fi
+
+    # Register Serena MCP server with Claude Code
+    log_info "Registering Serena MCP server with Claude Code..."
+    if claude mcp add serena --scope user -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context ide-assistant --project "$(pwd)"; then
+        log_success "Serena MCP server registered with Claude Code"
+
+        # Verify connection
+        log_info "Verifying server connection..."
+        sleep 2
+        if claude mcp list | grep -q "serena.*✓ Connected"; then
+            log_success "Serena MCP server connected successfully"
+        else
+            log_warning "Serena MCP server registered but connection verification failed"
+        fi
+    else
+        log_error "Failed to register Serena MCP server with Claude Code"
+        return 1
+    fi
+
+    log_group_end "Setting up Serena MCP Server"
 }
 
 main() {
