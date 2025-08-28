@@ -21,7 +21,7 @@ IMPORT_FILES=(
     "$FEATURE_TMP_DIR/riso-bootstrap-options.env:Feature options"
 )
 # Calculate total steps dynamically
-TOTAL_STEPS=0  # Base steps: update_libs, setup_claude, setup_shell
+TOTAL_STEPS=0
 BASE_STEPS=("grant_ssh_permissions")
 # Optionally add conditional steps
 if [ "$ENABLE_SERENA" = "true" ]; then
@@ -99,7 +99,7 @@ setup_serena_mcp() {
     # Add Serena MCP server to Claude Code
     log_group_start "Registering with Claude Code"
     log_info "Registering Serena MCP server with Claude Code..."
-    if ! claude mcp add serena "claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context ide-assistant --project $(pwd)"; then
+    if ! claude mcp add serena --scope user -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context ide-assistant --project "$(pwd)"; then
         log_warning "Failed to register Serena MCP server with Claude Code. This may be expected if already registered."
     else
         log_success "Serena MCP server registered with Claude Code"
