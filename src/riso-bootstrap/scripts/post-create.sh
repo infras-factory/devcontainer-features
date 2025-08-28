@@ -66,7 +66,7 @@ setup_claude() {
     log_info "Installing Claude Code CLI tool..."
 
     # Install Claude CLI globally with specific version
-    npm install -g @anthropic-ai/claude-code@1.0.67
+    npm install -g @anthropic-ai/claude-code
 
     log_success "Claude Code installed successfully"
     return 0
@@ -292,6 +292,13 @@ setup_serena() {
     # Note: step_id parameter kept for consistency but not used in new logging style
     set_step_context "setup_serena"
 
+    # Check if Serena is already setup in this project
+    if [ -d ".serena" ]; then
+        log_notice "Serena already configured for this project (found .serena directory)"
+        log_info "Skipping Serena setup..."
+        return 0
+    fi
+
     log_info "Setting up Serena coding agent..."
 
     # Install UV if not present
@@ -322,7 +329,7 @@ setup_serena() {
     # Add Serena MCP server to Claude Code
     log_group_start "Registering with Claude Code"
     log_info "Registering Serena MCP server with Claude Code..."
-    if ! claude mcp add serena "uvx --from git+https://github.com/oraios/serena serena mcp --project $(pwd)"; then
+    if ! claude mcp add serena "claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context ide-assistant --project $(pwd)"; then
         log_warning "Failed to register Serena MCP server with Claude Code. This may be expected if already registered."
     else
         log_success "Serena MCP server registered with Claude Code"
