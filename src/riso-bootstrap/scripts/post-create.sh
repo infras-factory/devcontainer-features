@@ -326,16 +326,6 @@ setup_serena() {
     log_success "Project indexed successfully"
     log_group_end "Indexing project"
 
-    # Add Serena MCP server to Claude Code
-    log_group_start "Registering with Claude Code"
-    log_info "Registering Serena MCP server with Claude Code..."
-    if ! claude mcp add serena "claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context ide-assistant --project $(pwd)"; then
-        log_warning "Failed to register Serena MCP server with Claude Code. This may be expected if already registered."
-    else
-        log_success "Serena MCP server registered with Claude Code"
-    fi
-    log_group_end "Registering with Claude Code"
-
     log_success "Serena setup completed successfully"
     return 0
 }

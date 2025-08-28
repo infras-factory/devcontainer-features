@@ -20,9 +20,14 @@ IMPORT_FILES=(
     "$FEATURE_TMP_DIR/utils/layer-0/logger.sh:Logger utilities"
     "$FEATURE_TMP_DIR/riso-bootstrap-options.env:Feature options"
 )
-# Total steps for this workflow
-# shellcheck disable=SC2034
-TOTAL_STEPS=1
+# Calculate total steps dynamically
+TOTAL_STEPS=0  # Base steps: update_libs, setup_claude, setup_shell
+BASE_STEPS=("grant_ssh_permissions")
+# Optionally add conditional steps
+if [ "$ENABLE_SERENA" = "true" ]; then
+    BASE_STEPS+=("setup_serena_mcp")
+fi
+TOTAL_STEPS=${#BASE_STEPS[@]}
 
 # ----------------------------------------
 # Local Helper Functions
@@ -85,13 +90,41 @@ grant_ssh_permissions() {
     fi
 }
 
+# Add Serena MCP server to Claude Code
+setup_serena_mcp() {
+    # shellcheck disable=SC2034
+    local step_id=$1
+
+    set_step_context "setup_serena_mcp"
+    # Add Serena MCP server to Claude Code
+    log_group_start "Registering with Claude Code"
+    log_info "Registering Serena MCP server with Claude Code..."
+    if ! claude mcp add serena "claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context ide-assistant --project $(pwd)"; then
+        log_warning "Failed to register Serena MCP server with Claude Code. This may be expected if already registered."
+    else
+        log_success "Serena MCP server registered with Claude Code"
+    fi
+    log_group_end "Registering with Claude Code"
+
+}
+
 main() {
     set_workflow_context "post-start.sh"
     log_workflow_start "Riso Bootstrap Post-Start Setup"
 
-    log_step_start "Grant SSH permissions" 1 1
-    grant_ssh_permissions 1
+    local current_step=0
+
+    # Step: Grant SSH permissions
+    log_step_start "Grant SSH permissions" $((++current_step)) "$TOTAL_STEPS"
+    grant_ssh_permissions $current_step
     log_step_end "Grant SSH permissions" "success"
+
+    # Step: Setup Serena MCP (if enabled)
+    if [ "$ENABLE_SERENA" = "true" ]; then
+        log_step_start "Setup Serena MCP" $((++current_step)) "$TOTAL_STEPS"
+        setup_serena_mcp "$current_step"
+        log_step_end "Setup Serena MCP" "success"
+    fi
 
     log_workflow_end "Riso Bootstrap Post-Start Setup" "success"
 }
