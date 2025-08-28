@@ -13,14 +13,6 @@ IMPORT_FILES=(
     "$FEATURE_TMP_DIR/utils/layer-0/package-manager.sh:Package manager utilities"
     "$FEATURE_TMP_DIR/riso-bootstrap-options.env:Feature options"
 )
-# Calculate total steps dynamically
-TOTAL_STEPS=3  # Base steps: update_libs, setup_claude, setup_shell
-BASE_STEPS=("update_latest_libs" "setup_claude" "setup_enhanced_shell")
-# Optionally add conditional steps
-if [ "$ENABLE_SERENA" = "true" ]; then
-    BASE_STEPS+=("setup_serena")
-fi
-TOTAL_STEPS=${#BASE_STEPS[@]}
 
 # ----------------------------------------
 # Local Helper Functions
@@ -45,6 +37,16 @@ import_utility_files() {
 # Validate and Import Required Utilities
 # ----------------------------------------
 import_utility_files IMPORT_FILES
+
+# ----------------------------------------
+# Calculate total steps dynamically (AFTER importing options)
+# ----------------------------------------
+BASE_STEPS=("update_latest_libs" "setup_claude" "setup_enhanced_shell")
+# Optionally add conditional steps
+if [ "$ENABLE_SERENA" = "true" ]; then
+    BASE_STEPS+=("setup_serena")
+fi
+TOTAL_STEPS=${#BASE_STEPS[@]}
 
 # ----------------------------------------
 # scripts/post-create.sh - Post-creation script for Riso Bootstrap
