@@ -283,7 +283,7 @@ alias cc="claude 'MANDATORY: Follow ~/.claude/CLAUDE.md enhanced workflow:
     4. VERIFY: AI-Supervisor loads Core→UserPatterns→HighPriority→Flexible
     5. TDD: Enforce test-first, track with TodoWrite
     CRITICAL: SDD for features, modular standards for quality, no exceptions on 100% items.
-SAU ĐÓ TRẢ VỀ Context Loaded'"
+    THEN RETURN Context Loaded'"
 EOF
     fi
 }
