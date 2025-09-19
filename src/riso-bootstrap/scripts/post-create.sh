@@ -81,7 +81,7 @@ setup_gemini() {
 
     log_info "Installing Gemini Code CLI tool..."
 
-    # Install Gemini CLI globally with specific version
+    # Install Gemini CLI globally (latest version)
     npm install -g @google/gemini-cli@latest
 
     log_success "Gemini Code installed successfully"
