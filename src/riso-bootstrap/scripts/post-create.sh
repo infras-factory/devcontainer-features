@@ -291,13 +291,14 @@ fi
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 # Claude Code alias with workflow enforcement
-alias cc="claude 'MANDATORY: Follow ~/.claude/CLAUDE.md workflow EXACTLY:
-  1. START with STEP 0: SESSION INITIALIZATION.
-  2. ALWAYS use AI-Supervisor for task analysis (STEP 1)
-  3. CONFIRM understanding before executing (STEP 2)
-  4. Use AI-Supervisor for verification when needed (STEP 4)
-  5. Complete with proper cleanup (STEP 5)
-  CRITICAL: Never skip steps.'"
+alias cc="claude 'MANDATORY: Follow ~/.claude/CLAUDE.md enhanced workflow:
+    1. INIT: Load .context/ + ~/.claude/risotech-standards/ modular system
+    2. ROUTE: New features → SDD (/spec-*) | Quick fixes → AI-Supervisor
+    3. EXECUTE: With constitutional compliance (9 articles)
+    4. VERIFY: AI-Supervisor loads Core→UserPatterns→HighPriority→Flexible
+    5. TDD: Enforce test-first, track with TodoWrite
+    CRITICAL: SDD for features, modular standards for quality, no exceptions on 100% items.
+    THEN RETURN Context Loaded'"
 EOF
     fi
 }
