@@ -58,6 +58,11 @@
     },
     {
       "type": "bind",
+      "source": "${localEnv:HOME}${localEnv:USERPROFILE}/.gemini",
+      "target": "/home/vscode/.gemini"
+    },
+    {
+      "type": "bind",
       "source": "${localEnv:HOME}${localEnv:USERPROFILE}/.claude",
       "target": "/home/vscode/.claude"
     },

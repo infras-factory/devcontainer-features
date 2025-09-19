@@ -232,6 +232,21 @@ display_feature_status() {
         log_section_info "  Run 'npm install -g @anthropic-ai/claude-code' to install"
     fi
 
+    # Gemini CLI
+    log_subsection "AI Development Assistant"
+    if check_command "gemini"; then
+        log_section_info "✓ Gemini CLI: $(get_version gemini)"
+        # Check if Gemini Oauth exists
+        if [ -f "$HOME/.gemini/oauth_creds.json" ] || [ -d "$HOME/.gemini" ]; then
+            log_section_info "  OAuth: mounted from host"
+        else
+            log_section_info "  OAuth: not found (run 'gemini login' to configure)"
+        fi
+    else
+        log_section_info "✗ Gemini CLI not installed"
+        log_section_info "  Run 'npm install -g @google/gemini-cli' to install"
+    fi
+
     # Serena Coding Agent
     if [ "$ENABLE_SERENA" = "true" ]; then
         log_subsection "Serena Coding Agent"

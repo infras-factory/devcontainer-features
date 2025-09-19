@@ -74,6 +74,21 @@ setup_claude() {
     return 0
 }
 
+# Function to setup Gemini CLI tool
+setup_gemini() {
+    local step_id=$1
+    set_step_context "setup_gemini"
+
+    log_info "Installing Gemini Code CLI tool..."
+
+    # Install Gemini CLI globally with specific version
+    npm install -g @google/gemini-cli@latest
+
+    log_success "Gemini Code installed successfully"
+    return 0
+}
+
+
 # Function to setup enhanced shell
 setup_enhanced_shell() {
     local step_id=$1
@@ -399,21 +414,28 @@ main() {
 
     local current_step=0
 
-    # Step 1: Update libraries
+    # Step Update libraries
     log_step_start "Update latest libraries" $((++current_step)) "$TOTAL_STEPS"
     log_group_start "Package management"
     update_latest_libs $current_step
     log_group_end "Package management"
     log_step_end "Update latest libraries" "success"
 
-    # Step 2: Setup Claude
+    # Step Setup Claude
     log_step_start "Install Claude Code" $((++current_step)) "$TOTAL_STEPS"
     log_group_start "Claude CLI installation"
     setup_claude $current_step
     log_group_end "Claude CLI installation"
     log_step_end "Claude Code installation" "success"
 
-    # Step 3: Setup enhanced shell
+    # Step Setup Gemini
+    log_step_start "Install Gemini Code" $((++current_step)) "$TOTAL_STEPS"
+    log_group_start "Gemini CLI installation"
+    setup_gemini $current_step
+    log_group_end "Gemini CLI installation"
+    log_step_end "Gemini Code installation" "success"
+
+    # Step Setup enhanced shell
     log_step_start "Setup enhanced shell ($SHELL_ENHANCEMENT_LEVEL)" $((++current_step)) "$TOTAL_STEPS"
     setup_enhanced_shell $current_step
     log_step_end "Shell enhancement" "success"
