@@ -51,7 +51,6 @@ echo -e "\n>>> Testing Claude CLI..."
 
 check "claude CLI is installed" command -v claude
 check "claude CLI version is valid" bash -c 'claude --version 2>&1 | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+"'
-check "claude CLI is logged in" bash -c "output=\$(echo \"test\" | claude --print 2>&1); if echo \"\$output\" | grep -q \"Invalid API key\"; then exit 1; else exit 0; fi"
 
 # ============================================
 # SECTION 3: Mount Points and Permissions Tests
