@@ -45,7 +45,7 @@
       "nvmInstallPath": "/usr/local/share/nvm"
     },
     "ghcr.io/devcontainers/features/python:1": {
-      "version": "latest",
+      "version": "3.13",
       "installTools": true,
       "toolsToInstall": "pre-commit"
     }
